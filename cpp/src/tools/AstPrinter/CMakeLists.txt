@@ -1,0 +1,3 @@
+add_executable(AstPrinter main.cpp)
+mycpptools_configure_target(AstPrinter)
+target_link_libraries(AstPrinter PRIVATE mycpptools)
