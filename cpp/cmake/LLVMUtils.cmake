@@ -5,5 +5,10 @@ function(mycpptools_configure_target target)
     )
     target_compile_definitions(${target} PRIVATE ${LLVM_DEFINITIONS})
     target_link_libraries(${target} PRIVATE
+        clangAST
+        clangBasic
+        clangFrontend
+        clangSerialization
+        clangTooling
     )
 endfunction()

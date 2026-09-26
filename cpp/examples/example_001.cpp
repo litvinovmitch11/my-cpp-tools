@@ -1,4 +1,11 @@
 int f(int x) {
-    int result = (x / 42);
-    return result;
+    if (x > 2)
+        return (x / 42);
+    return x + 1;
+}
+
+namespace n { 
+    namespace m { 
+        class C {}; 
+    } 
 }
