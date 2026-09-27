@@ -102,7 +102,8 @@ private:
     if (const auto *Literal = dyn_cast<IntegerLiteral>(S)) {
       std::string Value;
       llvm::raw_string_ostream Stream(Value);
-      Stream << Literal->getValue();
+      Literal->getValue().print(Stream,
+                                Literal->getType()->isSignedIntegerType());
       Label += " ";
       Label += Stream.str();
     } else if (const auto *Reference = dyn_cast<DeclRefExpr>(S)) {
