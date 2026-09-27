@@ -28,7 +28,6 @@ export function useGraphviz() {
                 setError(null);
                 return;
             }
-            // error
             setError(msg.message);
         };
 

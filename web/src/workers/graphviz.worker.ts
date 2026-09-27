@@ -13,8 +13,6 @@ Graphviz.load()
         post({ kind: "ready" });
     })
     .catch((e) => {
-        // Ошибка загрузки — приходит через ready-канал и без renderId.
-        // Отправляем как error без renderId, main поймёт по отсутствию поля.
         console.error("graphviz load failed", e);
     });
 
