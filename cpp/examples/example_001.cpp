@@ -1,11 +1,13 @@
 int f(int x) {
-    if (x > 2)
-        return (x / 42);
-    return x + 1;
+  if (x > 2)
+    return (x / 42);
+  return x + 1;
 }
 
-namespace n { 
-    namespace m { 
-        class C {}; 
-    } 
+int g() {
+  int b = 0;
+  for (int i = 0; i < 123; ++i) {
+    b += 3 * i + 2;
+  }
+  return b;
 }

@@ -4,10 +4,12 @@ project(my-cpp-tools)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(LLVMUtils)
 
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)
+
+include(LLVMUtils)
+include(DeveloperTools)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -24,6 +26,8 @@ mycpptools_configure_target(mycpptools)
 add_subdirectory(src/tools/AstPrinter)
 add_subdirectory(src/tools/CfgBuilder)
 add_subdirectory(src/tools/CdgBuilder)
+
+mycpptools_add_developer_targets()
 
 # enable_testing()
 # add_subdirectory(tests)
