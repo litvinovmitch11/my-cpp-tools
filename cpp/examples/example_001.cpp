@@ -1,4 +1,13 @@
 int f(int x) {
-    int result = (x / 42);
-    return result;
+  if (x > 2)
+    return (x / 42);
+  return x + 1;
+}
+
+int g() {
+  int b = 0;
+  for (int i = 0; i < 123; ++i) {
+    b += 3 * i + 2;
+  }
+  return b;
 }
