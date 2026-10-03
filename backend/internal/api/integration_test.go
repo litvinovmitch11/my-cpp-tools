@@ -41,4 +41,7 @@ func TestBuildASTIntegration(t *testing.T) {
 	if !strings.Contains(body.DOT, "digraph AST") || !strings.Contains(body.DOT, `label="main"`) {
 		t.Fatalf("unexpected graph: %s", body.DOT)
 	}
+	if !strings.Contains(body.DOT, `bgcolor="transparent"`) {
+		t.Fatalf("expected a transparent graph background: %s", body.DOT)
+	}
 }

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -11,17 +10,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/runner"
+	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/ast"
 )
 
 const (
 	maxCodeBytes = 256 << 10
-	maxBodyBytes = maxCodeBytes + (4 << 10)
+	maxBodyBytes = 6*maxCodeBytes + (4 << 10)
 )
-
-type ASTBuilder interface {
-	BuildAST(ctx context.Context, source string) (string, error)
-}
 
 type astRequest struct {
 	Code string `json:"code"`
@@ -41,7 +36,7 @@ type apiError struct {
 	Diagnostics string `json:"diagnostics,omitempty"`
 }
 
-func NewRouter(builder ASTBuilder) http.Handler {
+func NewRouter(builder ast.Builder) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
@@ -56,7 +51,7 @@ func health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func buildAST(builder ASTBuilder) http.HandlerFunc {
+func buildAST(builder ast.Builder) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 		decoder := json.NewDecoder(r.Body)
@@ -86,13 +81,13 @@ func buildAST(builder ASTBuilder) http.HandlerFunc {
 			return
 		}
 
-		var buildError *runner.BuildError
+		var buildError *ast.BuildError
 		switch {
 		case errors.As(err, &buildError):
 			writeError(w, http.StatusUnprocessableEntity, "invalid_source", "source code could not be parsed", buildError.Diagnostics)
-		case errors.Is(err, runner.ErrTimeout):
+		case errors.Is(err, ast.ErrTimeout):
 			writeError(w, http.StatusGatewayTimeout, "builder_timeout", "AST builder timed out", "")
-		case errors.Is(err, runner.ErrOutputTooLarge):
+		case errors.Is(err, ast.ErrOutputTooLarge):
 			writeError(w, http.StatusUnprocessableEntity, "graph_too_large", "generated graph is too large", "")
 		default:
 			slog.ErrorContext(

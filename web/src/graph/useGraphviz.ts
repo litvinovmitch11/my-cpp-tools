@@ -11,6 +11,7 @@ export function useGraphviz() {
     const [generation, setGeneration] = useState(0);
     const [result, setResult] = useState<LayoutResult | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [isRendering, setIsRendering] = useState(false);
     const renderIdRef = useRef(0);
 
     useEffect(() => {
@@ -34,6 +35,7 @@ export function useGraphviz() {
             worker.terminate();
             setStatus("error");
             setError(message);
+            setIsRendering(false);
         };
 
         worker.onerror = (event) => {
@@ -60,8 +62,10 @@ export function useGraphviz() {
             if (message.kind === "svg") {
                 setResult({ renderId: message.renderId, svg: message.svg });
                 setError(null);
+                setIsRendering(false);
             } else {
                 setError(message.message);
+                setIsRendering(false);
             }
         };
 
@@ -81,6 +85,7 @@ export function useGraphviz() {
         renderIdRef.current += 1;
         setStatus("loading");
         setError(null);
+        setIsRendering(false);
         setGeneration((current) => current + 1);
     }, []);
 
@@ -89,6 +94,8 @@ export function useGraphviz() {
         if (!worker || !workerReadyRef.current) return;
         renderIdRef.current += 1;
         setError(null);
+        setResult(null);
+        setIsRendering(true);
         const request: WorkerRequest = {
             kind: "layout",
             renderId: renderIdRef.current,
@@ -97,5 +104,12 @@ export function useGraphviz() {
         worker.postMessage(request);
     }, []);
 
-    return { status, result, error, render, restart };
+    const clear = useCallback(() => {
+        renderIdRef.current += 1;
+        setResult(null);
+        setError(null);
+        setIsRendering(false);
+    }, []);
+
+    return { status, result, error, isRendering, render, clear, restart };
 }
