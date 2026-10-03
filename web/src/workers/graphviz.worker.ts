@@ -13,7 +13,10 @@ Graphviz.load()
         post({ kind: "ready" });
     })
     .catch((e) => {
-        console.error("graphviz load failed", e);
+        post({
+            kind: "init-error",
+            message: e instanceof Error ? e.message : String(e),
+        });
     });
 
 self.onmessage = (ev: MessageEvent<WorkerRequest>) => {
@@ -21,7 +24,11 @@ self.onmessage = (ev: MessageEvent<WorkerRequest>) => {
     if (msg.kind !== "layout") return;
 
     if (!graphviz) {
-        post({ kind: "error", renderId: msg.renderId, message: "graphviz not loaded" });
+        post({
+            kind: "error",
+            renderId: msg.renderId,
+            message: "graphviz not loaded",
+        });
         return;
     }
 
@@ -29,6 +36,10 @@ self.onmessage = (ev: MessageEvent<WorkerRequest>) => {
         const svg = graphviz.dot(msg.dot);
         post({ kind: "svg", renderId: msg.renderId, svg });
     } catch (e) {
-        post({ kind: "error", renderId: msg.renderId, message: (e as Error).message });
+        post({
+            kind: "error",
+            renderId: msg.renderId,
+            message: e instanceof Error ? e.message : String(e),
+        });
     }
 };

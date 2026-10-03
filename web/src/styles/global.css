@@ -98,7 +98,7 @@ body,
     background: var(--bg-panel);
 }
 
-.pane+.pane {
+.pane + .pane {
     border-left: 1px solid var(--border);
 }
 

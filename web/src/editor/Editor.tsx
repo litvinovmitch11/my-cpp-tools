@@ -1,3 +1,4 @@
+import "./monaco";
 import MonacoEditor from "@monaco-editor/react";
 
 type Props = {

@@ -1,53 +1,101 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { WorkerRequest, WorkerResponse } from "../workers/messages";
+import type { LayoutResult } from "./types";
 
-export type LayoutResult = { renderId: number; svg: string } | null;
+type WorkerStatus = "loading" | "ready" | "error";
 
 export function useGraphviz() {
     const workerRef = useRef<Worker | null>(null);
-    const [ready, setReady] = useState(false);
-    const [result, setResult] = useState<LayoutResult>(null);
+    const workerReadyRef = useRef(false);
+    const [status, setStatus] = useState<WorkerStatus>("loading");
+    const [generation, setGeneration] = useState(0);
+    const [result, setResult] = useState<LayoutResult | null>(null);
     const [error, setError] = useState<string | null>(null);
     const renderIdRef = useRef(0);
 
     useEffect(() => {
-        const w = new Worker(
-            new URL("../workers/graphviz.worker.ts", import.meta.url),
-            { type: "module" }
-        );
-        workerRef.current = w;
+        let worker: Worker;
+        try {
+            worker = new Worker(
+                new URL("../workers/graphviz.worker.ts", import.meta.url),
+                { type: "module" },
+            );
+        } catch (cause) {
+            setStatus("error");
+            setError(cause instanceof Error ? cause.message : String(cause));
+            return;
+        }
+        workerRef.current = worker;
 
-        w.onmessage = (ev: MessageEvent<WorkerResponse>) => {
-            const msg = ev.data;
-            if (msg.kind === "ready") {
-                setReady(true);
+        const fail = (message: string) => {
+            if (workerRef.current !== worker) return;
+            workerRef.current = null;
+            workerReadyRef.current = false;
+            worker.terminate();
+            setStatus("error");
+            setError(message);
+        };
+
+        worker.onerror = (event) => {
+            event.preventDefault();
+            fail(event.message || "Graphviz Worker failed");
+        };
+        worker.onmessageerror = () =>
+            fail("Could not read Graphviz Worker response");
+        worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+            if (workerRef.current !== worker) return;
+            const message = event.data;
+            if (message.kind === "init-error") {
+                fail(message.message);
                 return;
             }
-            if (msg.kind === "svg") {
-                setResult({ renderId: msg.renderId, svg: msg.svg });
+            if (message.kind === "ready") {
+                workerReadyRef.current = true;
+                setStatus("ready");
                 setError(null);
                 return;
             }
-            setError(msg.message);
+            // A completed layout can already belong to an older request.
+            if (message.renderId !== renderIdRef.current) return;
+            if (message.kind === "svg") {
+                setResult({ renderId: message.renderId, svg: message.svg });
+                setError(null);
+            } else {
+                setError(message.message);
+            }
         };
 
         return () => {
-            w.terminate();
-            workerRef.current = null;
+            worker.terminate();
+            if (workerRef.current === worker) {
+                workerRef.current = null;
+                workerReadyRef.current = false;
+            }
         };
+    }, [generation]);
+
+    const restart = useCallback(() => {
+        workerRef.current?.terminate();
+        workerRef.current = null;
+        workerReadyRef.current = false;
+        renderIdRef.current += 1;
+        setStatus("loading");
+        setError(null);
+        setGeneration((current) => current + 1);
     }, []);
 
     const render = useCallback((dot: string) => {
-        const w = workerRef.current;
-        if (!w) return;
+        const worker = workerRef.current;
+        if (!worker || !workerReadyRef.current) return;
         renderIdRef.current += 1;
-        const req: WorkerRequest = {
+        setError(null);
+        const request: WorkerRequest = {
             kind: "layout",
             renderId: renderIdRef.current,
             dot,
         };
-        w.postMessage(req);
+        worker.postMessage(request);
     }, []);
 
-    return { ready, result, error, render };
+    return { status, result, error, render, restart };
 }

@@ -1,25 +1,24 @@
 import { useMemo } from "react";
 import { sanitizeSvg } from "./svg-sanitize";
-import type { LayoutResult } from "./useGraphviz";
+import type { LayoutResult } from "./types";
 
 type Props = {
-    result: LayoutResult;
+    result: LayoutResult | null;
 };
 
 export function GraphView({ result }: Props) {
     const cleanSvg = useMemo(
         () => (result ? sanitizeSvg(result.svg) : ""),
-        [result]
+        [result],
     );
 
     if (!result) {
-        return <div className="graph-empty">нажмите «Render DOT»</div>;
+        return <div className="graph-empty">Нажмите «Показать пример AST»</div>;
     }
 
     return (
         <div
             className="graph-view"
-            // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: cleanSvg }}
         />
     );
