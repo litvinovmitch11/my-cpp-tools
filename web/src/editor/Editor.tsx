@@ -4,9 +4,10 @@ import MonacoEditor from "@monaco-editor/react";
 type Props = {
     value: string;
     onChange: (next: string) => void;
+    fontSize: number;
 };
 
-export function Editor({ value, onChange }: Props) {
+export function Editor({ value, onChange, fontSize }: Props) {
     return (
         <MonacoEditor
             height="100%"
@@ -17,8 +18,8 @@ export function Editor({ value, onChange }: Props) {
             options={{
                 automaticLayout: true,
                 minimap: { enabled: false },
-                fontSize: 13,
-                lineHeight: 20,
+                fontSize,
+                lineHeight: Math.round(fontSize * 1.5),
                 scrollBeyondLastLine: false,
                 renderLineHighlight: "line",
                 padding: { top: 8 },

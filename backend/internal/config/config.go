@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	defaultHTTPAddress   = ":8080"
+	defaultHTTPAddress   = "127.0.0.1:8080"
 	defaultASTPrinter    = "AstPrinter"
 	defaultRunnerTimeout = 5 * time.Second
 )

@@ -51,7 +51,7 @@ public:
     if (!D || D->isImplicit())
       return true;
 
-    const unsigned Id = addNode(labelForDecl(D), "#DCEBFA");
+    const unsigned Id = addNode(labelForDecl(D), "#1E3A5F");
     ParentStack.push_back(Id);
     const bool Result =
         RecursiveASTVisitor<PrintFunctionAstVisitor>::TraverseDecl(D);
@@ -63,7 +63,7 @@ public:
     if (!S)
       return true;
 
-    const char *Color = isa<Expr>(S) ? "#FFF2CC" : "#E2F0D9";
+    const char *Color = isa<Expr>(S) ? "#4A3B16" : "#1F4D3A";
     const unsigned Id = addNode(labelForStmt(S), Color);
     ParentStack.push_back(Id);
     const bool Result =
@@ -146,7 +146,10 @@ public:
 
     OS << "  subgraph cluster_" << ClusterId << " {\n"
        << "    label=\"" << escapeDotLabel(FunctionName) << "\";\n"
-       << "    color=\"#CBD5E1\";\n";
+       << "    color=\"#4B5563\";\n"
+       << "    fontcolor=\"#D4D4D4\";\n"
+       << "    style=\"rounded\";\n"
+       << "    margin=12;\n";
 
     PrintFunctionAstVisitor Visitor(OS, NextNodeId);
     Visitor.TraverseDecl(Function);
@@ -170,10 +173,15 @@ public:
   void HandleTranslationUnit(clang::ASTContext &Context) override {
     llvm::outs() << "digraph AST {\n"
                  << "  rankdir=TB;\n"
-                 << "  graph [fontname=\"DejaVu Sans Mono\"];\n"
-                 << "  node [shape=box, style=filled, "
-                    "fontname=\"DejaVu Sans Mono\", "
-                    "fontsize=10];\n";
+                 << "  bgcolor=\"transparent\";\n"
+                 << "  graph [fontname=\"Arial\", fontcolor=\"#D4D4D4\", "
+                    "pad=0.2, nodesep=0.25, ranksep=0.45];\n"
+                 << "  node [shape=box, style=\"rounded,filled\", "
+                    "fontname=\"Arial\", fontsize=10, "
+                    "fontcolor=\"#F3F4F6\", color=\"#4B5563\", "
+                    "margin=\"0.12,0.08\"];\n"
+                 << "  edge [color=\"#6B7280\", penwidth=1.0, "
+                    "arrowsize=0.65];\n";
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
     llvm::outs() << "}\n";
   }

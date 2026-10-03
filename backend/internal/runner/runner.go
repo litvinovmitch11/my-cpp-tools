@@ -10,25 +10,14 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/ast"
 )
 
 const (
 	maxGraphBytes       = 8 << 20
 	maxDiagnosticsBytes = 64 << 10
 )
-
-var (
-	ErrTimeout        = errors.New("AST builder timed out")
-	ErrOutputTooLarge = errors.New("AST graph is too large")
-)
-
-type BuildError struct {
-	Diagnostics string
-}
-
-func (e *BuildError) Error() string {
-	return "AST builder rejected the source code"
-}
 
 type Runner struct {
 	binaryPath string
@@ -72,10 +61,10 @@ func (r *Runner) BuildAST(ctx context.Context, source string) (string, error) {
 
 	err = command.Run()
 	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
-		return "", ErrTimeout
+		return "", ast.ErrTimeout
 	}
 	if stdout.truncated {
-		return "", ErrOutputTooLarge
+		return "", ast.ErrOutputTooLarge
 	}
 	if err != nil {
 		var exitError *exec.ExitError
@@ -84,7 +73,7 @@ func (r *Runner) BuildAST(ctx context.Context, source string) (string, error) {
 			if stderr.truncated {
 				diagnostics += "\n[diagnostics truncated]"
 			}
-			return "", &BuildError{Diagnostics: strings.TrimSpace(diagnostics)}
+			return "", &ast.BuildError{Diagnostics: strings.TrimSpace(diagnostics)}
 		}
 		return "", fmt.Errorf("start AST builder: %w", err)
 	}
