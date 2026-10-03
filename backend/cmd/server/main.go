@@ -1,7 +1,15 @@
 package main
 
-import "github.com/litvinovmitch11/my-cpp-tools/backend/internal/cmd"
+import (
+	"log/slog"
+	"os"
+
+	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/cmd"
+)
 
 func main() {
-	cmd.RunServer()
+	if err := cmd.RunServer(); err != nil {
+		slog.Error("server stopped", "error", err)
+		os.Exit(1)
+	}
 }
