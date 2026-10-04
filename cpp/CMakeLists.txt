@@ -2,6 +2,15 @@ cmake_minimum_required(VERSION 3.28.3)
 project(my-cpp-tools)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+option(MYCPPTOOLS_ENABLE_COVERAGE "Instrument C++ targets for coverage" OFF)
+
+if(MYCPPTOOLS_ENABLE_COVERAGE)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        message(FATAL_ERROR "C++ coverage requires Clang")
+    endif()
+    add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+    add_link_options(-fprofile-instr-generate -fcoverage-mapping)
+endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -29,5 +38,5 @@ add_subdirectory(src/tools/CdgBuilder)
 
 mycpptools_add_developer_targets()
 
-# enable_testing()
-# add_subdirectory(tests)
+enable_testing()
+add_subdirectory(tests)

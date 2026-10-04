@@ -191,7 +191,7 @@ private:
 };
 
 class PrintAstFrontendAction : public clang::ASTFrontendAction {
-public:
+protected:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &Compiler,
                     llvm::StringRef) override {

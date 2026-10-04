@@ -40,6 +40,7 @@ func NewRouter(builder ast.Builder) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
 	router.Use(middleware.Recoverer)
+	router.Use(securityHeaders)
 	router.Use(logRequests)
 
 	router.Get("/healthz", health)
@@ -89,6 +90,8 @@ func buildAST(builder ast.Builder) http.HandlerFunc {
 			writeError(w, http.StatusGatewayTimeout, "builder_timeout", "AST builder timed out", "")
 		case errors.Is(err, ast.ErrOutputTooLarge):
 			writeError(w, http.StatusUnprocessableEntity, "graph_too_large", "generated graph is too large", "")
+		case errors.Is(err, ast.ErrBusy):
+			writeError(w, http.StatusServiceUnavailable, "builder_busy", "AST builder is at capacity", "")
 		default:
 			slog.ErrorContext(
 				r.Context(),

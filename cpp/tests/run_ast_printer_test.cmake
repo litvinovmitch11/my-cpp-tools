@@ -1,0 +1,70 @@
+if(NOT DEFINED AST_PRINTER OR NOT DEFINED SOURCE OR NOT DEFINED TEST_CASE)
+    message(FATAL_ERROR "AST_PRINTER, SOURCE, and TEST_CASE are required")
+endif()
+
+function(run_ast_printer output_var result_var error_var)
+    execute_process(
+        COMMAND "${AST_PRINTER}" "${SOURCE}" -- -std=c++20
+        RESULT_VARIABLE result
+        OUTPUT_VARIABLE output
+        ERROR_VARIABLE error
+        TIMEOUT 15
+    )
+    set(${output_var} "${output}" PARENT_SCOPE)
+    set(${result_var} "${result}" PARENT_SCOPE)
+    set(${error_var} "${error}" PARENT_SCOPE)
+endfunction()
+
+function(require_contains text expected)
+    string(FIND "${text}" "${expected}" position)
+    if(position EQUAL -1)
+        message(FATAL_ERROR "Expected output to contain '${expected}'\n${text}")
+    endif()
+endfunction()
+
+function(require_not_contains text rejected)
+    string(FIND "${text}" "${rejected}" position)
+    if(NOT position EQUAL -1)
+        message(FATAL_ERROR "Expected output not to contain '${rejected}'\n${text}")
+    endif()
+endfunction()
+
+run_ast_printer(output result error)
+
+if(TEST_CASE STREQUAL "invalid_source")
+    if(result EQUAL 0)
+        message(FATAL_ERROR "Invalid C++ source unexpectedly succeeded")
+    endif()
+    require_contains("${error}" "error:")
+    return()
+endif()
+
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "AstPrinter failed with ${result}:\n${error}")
+endif()
+require_contains("${output}" "digraph AST {")
+
+if(TEST_CASE STREQUAL "valid_simple")
+    require_contains("${output}" "label=\"main\"")
+    require_contains("${output}" "ReturnStmt")
+    require_contains("${output}" "IntegerLiteral 42")
+elseif(TEST_CASE STREQUAL "multiple_functions")
+    require_contains("${output}" "label=\"add\"")
+    require_contains("${output}" "label=\"answer\"")
+elseif(TEST_CASE STREQUAL "dot_escaping")
+    require_contains("${output}" "operator\\\"\\\"_units")
+elseif(TEST_CASE STREQUAL "excludes_includes")
+    require_contains("${output}" "label=\"main\"")
+    require_not_contains("${output}" "label=\"included_helper\"")
+    require_not_contains("${output}" "Function included_helper")
+elseif(TEST_CASE STREQUAL "deterministic")
+    run_ast_printer(second_output second_result second_error)
+    if(NOT second_result EQUAL 0)
+        message(FATAL_ERROR "Second AstPrinter run failed:\n${second_error}")
+    endif()
+    if(NOT output STREQUAL second_output)
+        message(FATAL_ERROR "AstPrinter output is not deterministic")
+    endif()
+else()
+    message(FATAL_ERROR "Unknown test case: ${TEST_CASE}")
+endif()

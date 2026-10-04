@@ -17,7 +17,10 @@ func TestBuildASTIntegration(t *testing.T) {
 	if binaryPath == "" {
 		t.Skip("AST_PRINTER_PATH is not set")
 	}
-	astRunner, err := runner.New(binaryPath, 5*time.Second)
+	astRunner, err := runner.New(binaryPath, runner.Options{
+		Timeout:       5 * time.Second,
+		MaxConcurrent: 1,
+	})
 	if err != nil {
 		t.Fatalf("create runner: %v", err)
 	}

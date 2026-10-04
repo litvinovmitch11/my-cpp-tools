@@ -51,7 +51,7 @@ export function App() {
                     Ctrl/⌘ + Enter
                 </span>
                 {status === "worker-error" && (
-                    <button onClick={restart}>Повторить загрузку</button>
+                    <button onClick={restart}>Retry initialization</button>
                 )}
             </div>
 
@@ -61,11 +61,11 @@ export function App() {
                         <span>Source</span>
                         <div
                             className="font-size-controls"
-                            aria-label="Размер шрифта редактора"
+                            aria-label="Editor font size"
                         >
                             <button
                                 type="button"
-                                aria-label="Уменьшить шрифт"
+                                aria-label="Decrease font size"
                                 disabled={editorFontSize <= minEditorFontSize}
                                 onClick={() =>
                                     setEditorFontSize((current) =>
@@ -78,12 +78,12 @@ export function App() {
                             >
                                 A−
                             </button>
-                            <output aria-label="Размер шрифта">
+                            <output aria-label="Font size">
                                 {editorFontSize}px
                             </output>
                             <button
                                 type="button"
-                                aria-label="Увеличить шрифт"
+                                aria-label="Increase font size"
                                 disabled={editorFontSize >= maxEditorFontSize}
                                 onClick={() =>
                                     setEditorFontSize((current) =>
@@ -140,18 +140,18 @@ export function App() {
 function getButtonLabel(status: ReturnType<typeof useAstGraph>["status"]) {
     switch (status) {
         case "initializing":
-            return "Загрузка Graphviz…";
+            return "Loading Graphviz…";
         case "building":
-            return "Построение AST…";
+            return "Building AST…";
         case "rendering":
-            return "Отрисовка графа…";
+            return "Rendering graph…";
         default:
-            return "Построить AST";
+            return "Build AST";
     }
 }
 
 function getEmptyMessage(status: ReturnType<typeof useAstGraph>["status"]) {
-    if (status === "building") return "Backend строит AST…";
-    if (status === "rendering") return "Graphviz отрисовывает граф…";
-    return "Введите C++ код и нажмите «Построить AST»";
+    if (status === "building") return "The backend is building the AST…";
+    if (status === "rendering") return "Graphviz is rendering the graph…";
+    return "Enter C++ code and select Build AST";
 }

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { resolve } from "node:path";
 
 test("builds and renders an AST for the editor source", async ({ page }) => {
     await page.goto("/");
@@ -7,15 +8,19 @@ test("builds and renders an AST for the editor source", async ({ page }) => {
         "int alpha_pipeline(int value) { return value + 42; }",
     );
 
-    await expect(
-        page.getByRole("button", { name: "Построить AST" }),
-    ).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Build AST" })).toBeEnabled();
     await page.keyboard.press("Control+Enter");
 
     const graph = page.getByTestId("ast-graph");
     await expect(graph).toContainText("alpha_pipeline");
     const svg = graph.locator("svg");
     await expect(svg).toBeVisible();
+    if (process.env.CAPTURE_README_SCREENSHOT === "true") {
+        await page.screenshot({
+            path: resolve("../docs/assets/ast-viewer.png"),
+            fullPage: true,
+        });
+    }
     expect(
         await svg.evaluate((element) =>
             window
@@ -39,10 +44,10 @@ test("builds and renders an AST for the editor source", async ({ page }) => {
 
     const fittedBounds = await svg.boundingBox();
     expect(fittedBounds).not.toBeNull();
-    await page.getByRole("button", { name: "Увеличить граф" }).click();
-    await expect(
-        page.getByRole("status", { name: "Масштаб графа" }),
-    ).toHaveText("125%");
+    await page.getByRole("button", { name: "Zoom in" }).click();
+    await expect(page.getByRole("status", { name: "Graph zoom" })).toHaveText(
+        "125%",
+    );
     await expect
         .poll(async () => (await svg.boundingBox())?.width ?? 0)
         .toBeGreaterThan(fittedBounds?.width ?? 0);
@@ -51,16 +56,16 @@ test("builds and renders an AST for the editor source", async ({ page }) => {
     await page.keyboard.down("Control");
     await page.mouse.wheel(0, -100);
     await page.keyboard.up("Control");
-    await expect(
-        page.getByRole("status", { name: "Масштаб графа" }),
-    ).toHaveText("150%");
+    await expect(page.getByRole("status", { name: "Graph zoom" })).toHaveText(
+        "150%",
+    );
     expect(await page.evaluate(() => window.innerWidth)).toBe(
         pageWidthBeforeWheel,
     );
-    await page.getByRole("button", { name: "Вписать" }).click();
-    await expect(
-        page.getByRole("status", { name: "Масштаб графа" }),
-    ).toHaveText("100%");
+    await page.getByRole("button", { name: "Fit" }).click();
+    await expect(page.getByRole("status", { name: "Graph zoom" })).toHaveText(
+        "100%",
+    );
 
     expect(
         await page.evaluate(
@@ -73,7 +78,7 @@ test("shows compiler diagnostics for invalid C++", async ({ page }) => {
     await page.goto("/");
     await setEditorCode(page, "int broken(");
 
-    const buildButton = page.getByRole("button", { name: "Построить AST" });
+    const buildButton = page.getByRole("button", { name: "Build AST" });
     await expect(buildButton).toBeEnabled();
     await buildButton.click();
 
@@ -94,11 +99,11 @@ test("supports editor font size and word navigation", async ({ page }) => {
 
     const editorText = editor.locator(".view-lines");
     await expect(editorText).toHaveCSS("font-size", "15px");
-    await page.getByRole("button", { name: "Увеличить шрифт" }).click();
+    await page.getByRole("button", { name: "Increase font size" }).click();
     await expect(editorText).toHaveCSS("font-size", "16px");
-    await expect(
-        page.getByRole("status", { name: "Размер шрифта" }),
-    ).toHaveText("16px");
+    await expect(page.getByRole("status", { name: "Font size" })).toHaveText(
+        "16px",
+    );
 });
 
 async function setEditorCode(page: Page, code: string) {

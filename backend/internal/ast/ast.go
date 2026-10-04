@@ -8,6 +8,7 @@ import (
 var (
 	ErrTimeout        = errors.New("AST builder timed out")
 	ErrOutputTooLarge = errors.New("AST graph is too large")
+	ErrBusy           = errors.New("AST builder is at capacity")
 )
 
 type Builder interface {
