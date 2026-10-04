@@ -19,7 +19,10 @@ func RunServer() error {
 	if err != nil {
 		return err
 	}
-	astRunner, err := runner.New(cfg.ASTPrinter, cfg.RunnerTimeout)
+	astRunner, err := runner.New(cfg.ASTPrinter, runner.Options{
+		Timeout:       cfg.RunnerTimeout,
+		MaxConcurrent: cfg.MaxConcurrent,
+	})
 	if err != nil {
 		return err
 	}

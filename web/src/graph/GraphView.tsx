@@ -48,23 +48,23 @@ export function GraphView({ result, emptyMessage }: Props) {
         <div className="graph-view" data-testid="ast-graph">
             <div
                 className="graph-controls"
-                aria-label="Масштаб графа"
-                title="Ctrl/⌘ + колесо"
+                aria-label="Graph zoom"
+                title="Ctrl/⌘ + mouse wheel"
             >
                 <button
                     type="button"
-                    aria-label="Уменьшить граф"
+                    aria-label="Zoom out"
                     disabled={zoom <= minZoom}
                     onClick={() => changeZoom(-zoomStep)}
                 >
                     −
                 </button>
-                <output aria-label="Масштаб графа">
+                <output aria-label="Graph zoom">
                     {Math.round(zoom * 100)}%
                 </output>
                 <button
                     type="button"
-                    aria-label="Увеличить граф"
+                    aria-label="Zoom in"
                     disabled={zoom >= maxZoom}
                     onClick={() => changeZoom(zoomStep)}
                 >
@@ -76,7 +76,7 @@ export function GraphView({ result, emptyMessage }: Props) {
                     disabled={zoom === minZoom}
                     onClick={() => setZoom(minZoom)}
                 >
-                    Вписать
+                    Fit
                 </button>
             </div>
             <div

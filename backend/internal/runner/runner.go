@@ -22,17 +22,47 @@ const (
 type Runner struct {
 	binaryPath string
 	timeout    time.Duration
+	slots      chan struct{}
 }
 
-func New(binaryPath string, timeout time.Duration) (*Runner, error) {
+type Options struct {
+	Timeout       time.Duration
+	MaxConcurrent int
+}
+
+func New(binaryPath string, options Options) (*Runner, error) {
+	if options.Timeout <= 0 {
+		return nil, errors.New("runner timeout must be positive")
+	}
+	if options.MaxConcurrent <= 0 {
+		return nil, errors.New("runner max concurrency must be positive")
+	}
 	resolvedPath, err := exec.LookPath(binaryPath)
 	if err != nil {
 		return nil, fmt.Errorf("find AST builder %q: %w", binaryPath, err)
 	}
-	return &Runner{binaryPath: resolvedPath, timeout: timeout}, nil
+	absolutePath, err := filepath.Abs(resolvedPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolve AST builder path: %w", err)
+	}
+	return &Runner{
+		binaryPath: absolutePath,
+		timeout:    options.Timeout,
+		slots:      make(chan struct{}, options.MaxConcurrent),
+	}, nil
 }
 
 func (r *Runner) BuildAST(ctx context.Context, source string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	select {
+	case r.slots <- struct{}{}:
+		defer func() { <-r.slots }()
+	default:
+		return "", ast.ErrBusy
+	}
+
 	tempDir, err := os.MkdirTemp("", "my-cpp-tools-")
 	if err != nil {
 		return "", fmt.Errorf("create temporary directory: %w", err)
@@ -58,10 +88,20 @@ func (r *Runner) BuildAST(ctx context.Context, source string) (string, error) {
 	)
 	command.Stdout = stdout
 	command.Stderr = stderr
+	command.Dir = tempDir
+	command.Env = []string{
+		"HOME=" + tempDir,
+		"TMPDIR=" + tempDir,
+		"LANG=C",
+		"LC_ALL=C",
+	}
 
 	err = command.Run()
 	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
 		return "", ast.ErrTimeout
+	}
+	if errors.Is(runCtx.Err(), context.Canceled) {
+		return "", runCtx.Err()
 	}
 	if stdout.truncated {
 		return "", ast.ErrOutputTooLarge

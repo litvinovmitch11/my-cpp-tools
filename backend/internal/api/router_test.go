@@ -36,6 +36,12 @@ func TestBuildAST(t *testing.T) {
 	if got := response.Header().Get("Content-Type"); got != "application/json" {
 		t.Fatalf("expected JSON response, got %q", got)
 	}
+	if got := response.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+		t.Fatalf("expected security headers, got X-Content-Type-Options %q", got)
+	}
+	if got := response.Header().Get("Cache-Control"); got != "no-store" {
+		t.Fatalf("expected no-store response, got %q", got)
+	}
 	if got := response.Body.String(); got != "{\"dot\":\"digraph AST {}\"}\n" {
 		t.Fatalf("unexpected response: %s", got)
 	}
@@ -109,6 +115,23 @@ func TestBuildASTMapsTimeout(t *testing.T) {
 
 	if response.Code != http.StatusGatewayTimeout {
 		t.Fatalf("expected status 504, got %d: %s", response.Code, response.Body.String())
+	}
+}
+
+func TestBuildASTMapsBusyRunner(t *testing.T) {
+	builder := builderFunc(func(_ context.Context, _ string) (string, error) {
+		return "", ast.ErrBusy
+	})
+
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/ast", strings.NewReader(`{"code":"int main() {}"}`))
+	response := httptest.NewRecorder()
+	NewRouter(builder).ServeHTTP(response, request)
+
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("expected status 503, got %d: %s", response.Code, response.Body.String())
+	}
+	if !strings.Contains(response.Body.String(), `"code":"builder_busy"`) {
+		t.Fatalf("unexpected response: %s", response.Body.String())
 	}
 }
 
