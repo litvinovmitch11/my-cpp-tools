@@ -10,5 +10,5 @@ cmake \
     -B "${build_directory}" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DMYCPPTOOLS_ENABLE_COVERAGE=ON \
-    -DCMAKE_CXX_COMPILER=clang++
+    -DCMAKE_CXX_COMPILER="${CXX:-clang++}"
 cmake --build "${build_directory}" --target coverage --parallel
