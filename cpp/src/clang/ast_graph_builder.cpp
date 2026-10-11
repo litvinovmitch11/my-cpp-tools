@@ -1,4 +1,3 @@
-#include "mycpptools/graph/graph.hpp"
 #include <mycpptools/clang/ast_graph_builder.hpp>
 
 #include "clang/AST/ASTConsumer.h"
@@ -7,79 +6,118 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Tooling/Tooling.h"
-#include "llvm/Support/raw_ostream.h"
 
-#include <iostream>
 #include <memory>
 #include <vector>
 
+namespace mycpptools::clang_frontend {
+
 namespace {
 
-// работает на уровне функции
-class BuildFunctionAstGraphVisitor
-    : public clang::RecursiveASTVisitor<BuildFunctionAstGraphVisitor> {
+class FunctionAstGraphBuilder
+    : public clang::RecursiveASTVisitor<FunctionAstGraphBuilder> {
 public:
-  BuildFunctionAstGraphVisitor(mycpptools::FunctionAstGraph &Graph,
-                               size_t &NextNodeId);
+  FunctionAstGraphBuilder(mycpptools::FunctionAstGraph &Graph) : Graph(Graph) {}
 
-  bool TraverseDecl(clang::Decl *D);
-  bool TraverseStmt(clang::Stmt *S);
+  bool TraverseDecl(clang::Decl *D) {
+    if (!D)
+      return true;
+
+    (void)Graph;
+    ParentStack.push_back(1);
+    const bool Result =
+        RecursiveASTVisitor<FunctionAstGraphBuilder>::TraverseDecl(D);
+    ParentStack.pop_back();
+
+    return Result;
+  }
+
+  bool dataTraverseStmtPre(clang::Stmt *S) {
+    (void)Graph;
+    (void)S;
+    ParentStack.push_back(1);
+
+    return true;
+  }
+
+  bool dataTraverseStmtPost(clang::Stmt *S) {
+    (void)Graph;
+    (void)S;
+    ParentStack.pop_back();
+
+    return true;
+  }
 
 private:
   mycpptools::FunctionAstGraph &Graph;
-  size_t &NextNodeId;
   std::vector<size_t> ParentStack;
 };
 
-// работает на уровне юнита трансляции (можно диспетчер назвать)
-class BuildAstGraphVisitor
-    : public clang::RecursiveASTVisitor<BuildAstGraphVisitor> {
+class FunctionAstGraphCollector
+    : public clang::RecursiveASTVisitor<FunctionAstGraphCollector> {
 public:
-  BuildAstGraphVisitor(clang::ASTContext &Context, llvm::raw_ostream &OS)
-      : Context(Context), OS(OS) {
-    std::cout << "Visitor\n";
-  }
+  FunctionAstGraphCollector(clang::ASTContext &Context,
+                            FunctionAstGraphs &Graphs)
+      : Context(Context), Graphs(Graphs) {}
 
-  bool VisitFunctionDecl(clang::FunctionDecl *Function) { return true; }
+  bool VisitFunctionDecl(clang::FunctionDecl *Function) {
+    if (!Function->doesThisDeclarationHaveABody())
+      return true;
+
+    clang::SourceManager &Sources = Context.getSourceManager();
+    clang::SourceLocation Location =
+        Sources.getExpansionLoc(Function->getLocation());
+    if (!Sources.isWrittenInMainFile(Location))
+      return true;
+
+    FunctionAstGraph Graph(Function->getQualifiedNameAsString());
+
+    FunctionAstGraphBuilder Builder(Graph);
+    if (!Builder.TraverseDecl(Function))
+      return false;
+
+    Graphs.push_back(std::move(Graph));
+    return true;
+  }
 
 private:
   clang::ASTContext &Context;
-  llvm::raw_ostream &OS;
-  size_t NextNodeId = 0;
-  size_t NextClusterId = 0;
+  FunctionAstGraphs &Graphs;
 };
 
-// как раз консьюмер
-class BuildAstGraphConsumer : public clang::ASTConsumer {
+class FunctionAstGraphConsumer : public clang::ASTConsumer {
 public:
-  void HandleTranslationUnit(clang::ASTContext &Context) override {}
-};
+  FunctionAstGraphConsumer(FunctionAstGraphs &Graphs) : Graphs(Graphs) {}
 
-class BuildAstGraphConsumerFactory {
-public:
-  BuildAstGraphConsumerFactory(
-      std::vector<mycpptools::FunctionAstGraph> &Functions)
-      : Functions(Functions) {
-    std::cout << "Factory\n";
-  }
-
-  std::unique_ptr<clang::ASTConsumer> newASTConsumer() {
-    return std::make_unique<BuildAstGraphConsumer>();
+  void HandleTranslationUnit(clang::ASTContext &Context) override {
+    FunctionAstGraphCollector Collector(Context, Graphs);
+    Collector.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
 private:
-  std::vector<mycpptools::FunctionAstGraph> &Functions;
+  FunctionAstGraphs &Graphs;
+};
+
+class FunctionAstGraphConsumerProvider {
+public:
+  FunctionAstGraphConsumerProvider(FunctionAstGraphs &Graphs)
+      : Graphs(Graphs) {}
+
+  std::unique_ptr<clang::ASTConsumer> newASTConsumer() {
+    return std::make_unique<FunctionAstGraphConsumer>(Graphs);
+  }
+
+private:
+  FunctionAstGraphs &Graphs;
 };
 
 } // namespace
 
-namespace mycpptools::clang_frontend {
-
-int buildAstGraphs(::clang::tooling::ClangTool &Tool,
-                   FunctionAstGraphs &Output) {
-  BuildAstGraphConsumerFactory ConsumerFactory(Output);
+int buildFunctionAstGraphs(::clang::tooling::ClangTool &Tool,
+                           FunctionAstGraphs &Graphs) {
+  FunctionAstGraphConsumerProvider ConsumerProvider(Graphs);
   auto ActionFactory =
-      ::clang::tooling::newFrontendActionFactory(&ConsumerFactory);
+      ::clang::tooling::newFrontendActionFactory(&ConsumerProvider);
   return Tool.run(ActionFactory.get());
 }
 

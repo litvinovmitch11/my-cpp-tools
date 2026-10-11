@@ -4,7 +4,6 @@
 #include "clang/Tooling/Tooling.h"
 
 #include <iostream>
-#include <memory>
 
 using namespace mycpptools::clang_frontend;
 using namespace clang;
@@ -26,13 +25,13 @@ int main(int argc, const char **argv) {
   tooling::ClangTool Tool(OptionsParser.getCompilations(),
                           OptionsParser.getSourcePathList());
 
-  FunctionAstGraphs Functions;
-  if (mycpptools::clang_frontend::buildAstGraphs(Tool, Functions)) {
+  mycpptools::FunctionAstGraphs Graphs;
+  if (buildFunctionAstGraphs(Tool, Graphs)) {
     return 1;
   }
 
-  for (const auto &Function : Functions) {
+  for (const auto &Graph : Graphs) {
     // print func graph
-    std::cout << Function.getName() << std::endl;
+    std::cout << Graph.getName() << std::endl;
   }
 }

@@ -28,13 +28,13 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
 
 add_library(mycpptools_graph STATIC
-    src/graph/graph.cpp
+    src/graph/directed_graph.cpp
 )
 add_library(mycpptools::graph ALIAS mycpptools_graph)
 mycpptools_configure_target(mycpptools_graph)
 
 add_library(mycpptools_ast STATIC
-    src/ast/ast.cpp
+    src/ast/ast_graph.cpp
 )
 add_library(mycpptools::ast ALIAS mycpptools_ast)
 mycpptools_configure_target(mycpptools_ast)
