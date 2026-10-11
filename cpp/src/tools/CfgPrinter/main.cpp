@@ -27,7 +27,7 @@ int main(int argc, const char **argv) {
                           OptionsParser.getSourcePathList());
 
   FunctionAstGraphs Functions;
-  if (Tool.run(createAstGraphActionFactory(Functions).get())) {
+  if (mycpptools::clang_frontend::buildAstGraphs(Tool, Functions)) {
     return 1;
   }
 

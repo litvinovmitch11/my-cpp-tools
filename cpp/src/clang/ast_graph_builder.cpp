@@ -6,12 +6,30 @@
 #include "clang/AST/Expr.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
+#include "clang/Tooling/Tooling.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include <iostream>
 #include <memory>
+#include <vector>
 
 namespace {
+
+// работает на уровне функции
+class BuildFunctionAstGraphVisitor
+    : public clang::RecursiveASTVisitor<BuildFunctionAstGraphVisitor> {
+public:
+  BuildFunctionAstGraphVisitor(mycpptools::FunctionAstGraph &Graph,
+                               size_t &NextNodeId);
+
+  bool TraverseDecl(clang::Decl *D);
+  bool TraverseStmt(clang::Stmt *S);
+
+private:
+  mycpptools::FunctionAstGraph &Graph;
+  size_t &NextNodeId;
+  std::vector<size_t> ParentStack;
+};
 
 // работает на уровне юнита трансляции (можно диспетчер назвать)
 class BuildAstGraphVisitor
@@ -22,7 +40,7 @@ public:
     std::cout << "Visitor\n";
   }
 
-  bool VisitFunctionDecl(clang::FunctionDecl *Function) {}
+  bool VisitFunctionDecl(clang::FunctionDecl *Function) { return true; }
 
 private:
   clang::ASTContext &Context;
@@ -57,10 +75,12 @@ private:
 
 namespace mycpptools::clang_frontend {
 
-std::unique_ptr<FrontendActionFactory>
-createAstGraphActionFactory(FunctionAstGraphs &Output) {
+int buildAstGraphs(::clang::tooling::ClangTool &Tool,
+                   FunctionAstGraphs &Output) {
   BuildAstGraphConsumerFactory ConsumerFactory(Output);
-  return clang::tooling::newFrontendActionFactory(&ConsumerFactory);
+  auto ActionFactory =
+      ::clang::tooling::newFrontendActionFactory(&ConsumerFactory);
+  return Tool.run(ActionFactory.get());
 }
 
 } // namespace mycpptools::clang_frontend
