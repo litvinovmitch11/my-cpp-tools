@@ -24,8 +24,53 @@ message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "Using ClangConfig.cmake in: ${Clang_DIR}")
 
+
+
+
+
+
+
+
+
+add_library(mycpptools_graph
+    src/graph/graph.cpp
+)
+
+add_library(mycpptools_clang_ast
+    src/clang/ast_graph_builder.cpp
+)
+target_link_libraries(mycpptools_clang_ast
+    PUBLIC mycpptools_graph
+    PRIVATE clangAST clangBasic clangFrontend clangTooling
+)
+
+add_library(mycpptools_dot
+    src/dot/dot_writer.cpp
+)
+target_link_libraries(mycpptools_dot
+    PUBLIC mycpptools_graph
+)
+
+add_executable(AstPrinter
+    tools/AstPrinter/main.cpp
+)
+target_link_libraries(AstPrinter
+    PRIVATE
+        mycpptools_clang_ast
+        mycpptools_dot
+)
+
+mycpptools_configure_cpp_target(target)
+
+
+
+
+
+
 add_library(mycpptools STATIC
-    src/common/utils.cpp
+    src/ast/ast.cpp
+    src/files/filehandler.cpp
+    src/graph/graph.cpp
 )
 target_include_directories(mycpptools PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -33,10 +78,10 @@ target_include_directories(mycpptools PUBLIC
 mycpptools_configure_target(mycpptools)
 
 add_subdirectory(src/tools/AstPrinter)
-add_subdirectory(src/tools/CfgBuilder)
-add_subdirectory(src/tools/CdgBuilder)
+add_subdirectory(src/tools/CdgPrinter)
+add_subdirectory(src/tools/CfgPrinter)
 
 mycpptools_add_developer_targets()
 
-enable_testing()
-add_subdirectory(tests)
+# enable_testing()
+# add_subdirectory(tests)

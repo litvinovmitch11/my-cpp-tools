@@ -1,0 +1,3 @@
+add_executable(CdgPrinter main.cpp)
+mycpptools_configure_target(CdgPrinter)
+target_link_libraries(CdgPrinter PRIVATE mycpptools)

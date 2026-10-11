@@ -57,7 +57,7 @@ for them.
 - Output must be deterministic for the same source and toolchain.
 - Escape every user-derived value before writing DOT.
 - Keep analysis logic independent from presentation attributes where practical.
-- `CfgBuilder` and `CdgBuilder` are future project-owned implementations, not
+- `CfgPrinter` and `CdgPrinter` are future project-owned implementations, not
   wrappers around compiler-provided graph builders.
 
 ### Go backend
