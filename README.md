@@ -49,7 +49,7 @@ selection rules, node and edge categories, tested constructs, and known gaps.
 
 - CMake 3.28 or newer;
 - LLVM and Clang 22 with development packages (the reference toolchain);
-- Go 1.27 or newer;
+- Go 1.27.3 or newer;
 - Node.js 24 or newer;
 - `make` and `rg` (ripgrep).
 
