@@ -7,5 +7,5 @@ mycpptools_configure_clang_target(AstPrinter)
 
 target_link_libraries(AstPrinter PRIVATE
     mycpptools::clang_ast
-    mycpptools::dot
+    mycpptools::presentation
 )

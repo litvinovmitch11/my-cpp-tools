@@ -21,7 +21,9 @@ find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)
 
 include(DeveloperTools)
+include(Coverage)
 include(LLVMUtils)
+include(CTest)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -44,6 +46,9 @@ target_link_libraries(mycpptools_ast PUBLIC
 
 add_library(mycpptools_clang_ast STATIC
     src/clang/ast_graph_builder.cpp
+    src/clang/clang_ast_classifier.cpp
+    src/clang/clang_ast_mapper.cpp
+    src/clang/function_ast_graph_builder.cpp
 )
 add_library(mycpptools::clang_ast ALIAS mycpptools_clang_ast)
 mycpptools_configure_target(mycpptools_clang_ast)
@@ -56,6 +61,8 @@ target_link_libraries(mycpptools_clang_ast
         clangAST
         clangBasic
         clangFrontend
+        clangIndex
+        clangLex
 )
 
 add_library(mycpptools_cfg STATIC
@@ -81,12 +88,37 @@ add_library(mycpptools_dot STATIC
 )
 add_library(mycpptools::dot ALIAS mycpptools_dot)
 mycpptools_configure_target(mycpptools_dot)
-target_link_libraries(mycpptools_dot PUBLIC
-    mycpptools::graph
+
+add_library(mycpptools_presentation STATIC
+    src/presentation/graph_dot_serializer.cpp
+)
+add_library(mycpptools::presentation ALIAS mycpptools_presentation)
+mycpptools_configure_target(mycpptools_presentation)
+target_link_libraries(mycpptools_presentation
+    PUBLIC
+        mycpptools::ast
+    PRIVATE
+        mycpptools::dot
 )
 
 add_subdirectory(src/tools/AstPrinter)
 add_subdirectory(src/tools/CfgPrinter)
 add_subdirectory(src/tools/CdgPrinter)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+
+    mycpptools_add_coverage_target(
+        TARGETS
+            AstPrinter
+            directed_graph_test
+            ast_graph_test
+            dot_writer_test
+            graph_dot_serializer_test
+        MINIMUM_LINE_PERCENT 60
+    )
+elseif(MYCPPTOOLS_ENABLE_COVERAGE)
+    message(FATAL_ERROR "C++ coverage requires BUILD_TESTING=ON")
+endif()
 
 mycpptools_add_developer_targets()

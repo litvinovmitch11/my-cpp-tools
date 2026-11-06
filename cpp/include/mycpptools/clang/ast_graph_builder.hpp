@@ -2,11 +2,17 @@
 
 #include "mycpptools/ast/ast_graph.hpp"
 
-#include "clang/Tooling/Tooling.h"
+namespace clang::tooling {
+
+class ClangTool;
+
+} // namespace clang::tooling
 
 namespace mycpptools::clang_frontend {
 
-int buildFunctionAstGraphs(::clang::tooling::ClangTool &Tool,
-                           mycpptools::FunctionAstGraphs &Output);
+// Builds graphs transactionally. On success, Output is replaced with all
+// graphs collected by Tool. On failure, Output remains unchanged.
+int buildFunctionAstGraphs(clang::tooling::ClangTool &Tool,
+                           ast::FunctionAstGraphs &Output);
 
 } // namespace mycpptools::clang_frontend

@@ -1,0 +1,49 @@
+digraph AST {
+  rankdir="TB";
+  bgcolor="transparent";
+  graph [fontname="Arial", fontcolor="#D4D4D4", pad="0.2", nodesep="0.25", ranksep="0.45"];
+  node [shape="box", style="rounded,filled", fontname="Arial", fontsize="10", fontcolor="#F3F4F6", color="#4B5563", margin="0.12,0.08"];
+  edge [color="#6B7280", penwidth="1.0", arrowsize="0.65", fontname="Arial", fontsize="9", fontcolor="#D4D4D4"];
+  subgraph cluster_0 {
+    label="message : const char *(_Bool)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f0_n0 [label="Function message", fillcolor="#1E3A5F"];
+    f0_n1 [label="ParmVar Detailed", fillcolor="#1E3A5F"];
+    f0_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f0_n3 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f0_n4 [label="ConditionalOperator", fillcolor="#4A3B16"];
+    f0_n5 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f0_n6 [label="DeclRefExpr Detailed", fillcolor="#4A3B16"];
+    f0_n7 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f0_n8 [label="StringLiteral \"line\\n\\\"quoted\\\"\"", fillcolor="#4A3B16"];
+    f0_n9 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f0_n10 [label="StringLiteral \"plain\"", fillcolor="#4A3B16"];
+    f0_n0 -> f0_n1 [label="parameter"];
+    f0_n0 -> f0_n2 [label="body"];
+    f0_n2 -> f0_n3;
+    f0_n3 -> f0_n4 [label="return value"];
+    f0_n4 -> f0_n5 [label="condition"];
+    f0_n5 -> f0_n6;
+    f0_n4 -> f0_n7 [label="then"];
+    f0_n7 -> f0_n8;
+    f0_n4 -> f0_n9 [label="else"];
+    f0_n9 -> f0_n10;
+  }
+  subgraph cluster_1 {
+    label="pathSeparator : char (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f1_n0 [label="Function pathSeparator", fillcolor="#1E3A5F"];
+    f1_n1 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f1_n2 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f1_n3 [label="CharacterLiteral '\\\\'", fillcolor="#4A3B16"];
+    f1_n0 -> f1_n1 [label="body"];
+    f1_n1 -> f1_n2;
+    f1_n2 -> f1_n3 [label="return value"];
+  }
+}
