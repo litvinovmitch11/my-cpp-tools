@@ -1,3 +1,0 @@
-add_executable(CdgBuilder main.cpp)
-mycpptools_configure_target(CdgBuilder)
-target_link_libraries(CdgBuilder PRIVATE mycpptools)

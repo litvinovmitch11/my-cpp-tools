@@ -1,3 +1,0 @@
-add_executable(CfgBuilder main.cpp)
-mycpptools_configure_target(CfgBuilder)
-target_link_libraries(CfgBuilder PRIVATE mycpptools)

@@ -39,7 +39,10 @@ coverage:
 e2e:
 	./scripts/e2e.sh
 
-check: format-check lint coverage
+check: format-check lint
+	cmake --build cpp/build --parallel
+	./scripts/coverage.sh
+	npm --prefix web run build
 	./scripts/hygiene.sh
 
 dev:

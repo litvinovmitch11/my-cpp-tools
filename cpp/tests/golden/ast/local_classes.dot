@@ -1,0 +1,91 @@
+digraph AST {
+  rankdir="TB";
+  bgcolor="transparent";
+  graph [fontname="Arial", fontcolor="#D4D4D4", pad="0.2", nodesep="0.25", ranksep="0.45"];
+  node [shape="box", style="rounded,filled", fontname="Arial", fontsize="10", fontcolor="#F3F4F6", color="#4B5563", margin="0.12,0.08"];
+  edge [color="#6B7280", penwidth="1.0", arrowsize="0.65", fontname="Arial", fontsize="9", fontcolor="#D4D4D4"];
+  subgraph cluster_0 {
+    label="useLocalClass : int (int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f0_n0 [label="Function useLocalClass", fillcolor="#1E3A5F"];
+    f0_n1 [label="ParmVar Value", fillcolor="#1E3A5F"];
+    f0_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f0_n3 [label="DeclStmt", fillcolor="#1F4D3A"];
+    f0_n4 [label="CXXRecord Multiplier", fillcolor="#1E3A5F"];
+    f0_n5 [label="AccessSpec", fillcolor="#1E3A5F"];
+    f0_n6 [label="AccessSpec", fillcolor="#1E3A5F"];
+    f0_n7 [label="Field Factor", fillcolor="#1E3A5F"];
+    f0_n8 [label="DeclStmt", fillcolor="#1F4D3A"];
+    f0_n9 [label="Var Double", fillcolor="#1E3A5F"];
+    f0_n10 [label="CXXConstructExpr", fillcolor="#4A3B16"];
+    f0_n11 [label="IntegerLiteral 2", fillcolor="#4A3B16"];
+    f0_n12 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f0_n13 [label="CXXMemberCallExpr", fillcolor="#4A3B16"];
+    f0_n14 [label="MemberExpr apply", fillcolor="#4A3B16"];
+    f0_n15 [label="DeclRefExpr Double", fillcolor="#4A3B16"];
+    f0_n16 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f0_n17 [label="DeclRefExpr Value", fillcolor="#4A3B16"];
+    f0_n0 -> f0_n1 [label="parameter"];
+    f0_n0 -> f0_n2 [label="body"];
+    f0_n2 -> f0_n3;
+    f0_n3 -> f0_n4 [label="declaration"];
+    f0_n4 -> f0_n5;
+    f0_n4 -> f0_n6;
+    f0_n4 -> f0_n7;
+    f0_n2 -> f0_n8;
+    f0_n8 -> f0_n9 [label="declaration"];
+    f0_n9 -> f0_n10 [label="initializer"];
+    f0_n10 -> f0_n11;
+    f0_n2 -> f0_n12;
+    f0_n12 -> f0_n13 [label="return value"];
+    f0_n13 -> f0_n14 [label="callee"];
+    f0_n14 -> f0_n15;
+    f0_n13 -> f0_n16 [label="argument"];
+    f0_n16 -> f0_n17;
+  }
+  subgraph cluster_1 {
+    label="useLocalClass(int)::Multiplier::Multiplier : void (int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f1_n0 [label="CXXConstructor Multiplier", fillcolor="#1E3A5F"];
+    f1_n1 [label="ParmVar Factor", fillcolor="#1E3A5F"];
+    f1_n2 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f1_n3 [label="DeclRefExpr Factor", fillcolor="#4A3B16"];
+    f1_n4 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f1_n0 -> f1_n1 [label="parameter"];
+    f1_n0 -> f1_n2;
+    f1_n2 -> f1_n3;
+    f1_n0 -> f1_n4 [label="body"];
+  }
+  subgraph cluster_2 {
+    label="useLocalClass(int)::Multiplier::apply : int (int) const";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f2_n0 [label="CXXMethod apply", fillcolor="#1E3A5F"];
+    f2_n1 [label="ParmVar Input", fillcolor="#1E3A5F"];
+    f2_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f2_n3 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f2_n4 [label="BinaryOperator *", fillcolor="#4A3B16"];
+    f2_n5 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f2_n6 [label="DeclRefExpr Input", fillcolor="#4A3B16"];
+    f2_n7 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f2_n8 [label="MemberExpr Factor", fillcolor="#4A3B16"];
+    f2_n9 [label="CXXThisExpr", fillcolor="#4A3B16"];
+    f2_n0 -> f2_n1 [label="parameter"];
+    f2_n0 -> f2_n2 [label="body"];
+    f2_n2 -> f2_n3;
+    f2_n3 -> f2_n4 [label="return value"];
+    f2_n4 -> f2_n5 [label="left operand"];
+    f2_n5 -> f2_n6;
+    f2_n4 -> f2_n7 [label="right operand"];
+    f2_n7 -> f2_n8;
+    f2_n8 -> f2_n9;
+  }
+}

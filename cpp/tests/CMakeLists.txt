@@ -1,54 +1,98 @@
-set(AST_PRINTER_TARGET AstPrinter)
-set(AST_TEST_RUNNER "${CMAKE_CURRENT_SOURCE_DIR}/run_ast_printer_test.cmake")
-set(AST_TEST_FIXTURES "${CMAKE_CURRENT_SOURCE_DIR}/fixtures")
+function(mycpptools_add_unit_test test_name source library)
+    set(target_name "${test_name}_test")
 
-function(add_ast_printer_test test_case fixture)
-    add_test(
-        NAME "ast.${test_case}"
-        COMMAND "${CMAKE_COMMAND}"
-            "-DAST_PRINTER=$<TARGET_FILE:${AST_PRINTER_TARGET}>"
-            "-DSOURCE=${AST_TEST_FIXTURES}/${fixture}"
-            "-DTEST_CASE=${test_case}"
-            -P "${AST_TEST_RUNNER}"
+    add_executable("${target_name}" "${source}")
+    mycpptools_configure_target("${target_name}")
+    target_include_directories("${target_name}" PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}"
     )
-    set_tests_properties("ast.${test_case}" PROPERTIES
-        TIMEOUT 20
-        ENVIRONMENT "LLVM_PROFILE_FILE=${PROJECT_BINARY_DIR}/coverage/profiles/%p-%m.profraw"
-    )
+    target_link_libraries("${target_name}" PRIVATE "${library}")
+
+    add_test(NAME "unit.${test_name}" COMMAND "${target_name}")
+    set_tests_properties("unit.${test_name}" PROPERTIES TIMEOUT 10)
 endfunction()
 
-add_ast_printer_test(valid_simple simple.cpp)
-add_ast_printer_test(multiple_functions multiple_functions.cpp)
-add_ast_printer_test(invalid_source invalid.cpp)
-add_ast_printer_test(dot_escaping escaping.cpp)
-add_ast_printer_test(excludes_includes includes.cpp)
-add_ast_printer_test(deterministic simple.cpp)
+mycpptools_add_unit_test(
+    directed_graph
+    unit/directed_graph_test.cpp
+    mycpptools::graph
+)
+mycpptools_add_unit_test(
+    ast_graph
+    unit/ast_graph_test.cpp
+    mycpptools::ast
+)
+mycpptools_add_unit_test(
+    dot_writer
+    unit/dot_writer_test.cpp
+    mycpptools::dot
+)
+mycpptools_add_unit_test(
+    graph_dot_serializer
+    unit/graph_dot_serializer_test.cpp
+    mycpptools::presentation
+)
 
-if(MYCPPTOOLS_ENABLE_COVERAGE)
-    string(REGEX MATCH "^[0-9]+" LLVM_COMPILER_MAJOR "${CMAKE_CXX_COMPILER_VERSION}")
-    find_program(LLVM_PROFDATA_EXECUTABLE
-        NAMES "llvm-profdata-${LLVM_COMPILER_MAJOR}" llvm-profdata
-        REQUIRED
+add_custom_target(update-ast-goldens)
+
+function(mycpptools_add_ast_golden_test example_name)
+    set(source_file
+        "${PROJECT_SOURCE_DIR}/examples/ast/${example_name}.cpp"
     )
-    find_program(LLVM_COV_EXECUTABLE
-        NAMES "llvm-cov-${LLVM_COMPILER_MAJOR}" llvm-cov
-        REQUIRED
+    set(expected_file
+        "${CMAKE_CURRENT_SOURCE_DIR}/golden/ast/${example_name}.dot"
     )
-    add_custom_target(coverage
-        COMMAND "${CMAKE_COMMAND}" -E rm -rf "${PROJECT_BINARY_DIR}/coverage"
-        COMMAND "${CMAKE_COMMAND}" -E make_directory
-            "${PROJECT_BINARY_DIR}/coverage/profiles"
-        COMMAND "${CMAKE_CTEST_COMMAND}" --output-on-failure
+    set(actual_file
+        "${CMAKE_CURRENT_BINARY_DIR}/golden/ast/${example_name}.dot"
+    )
+
+    add_test(
+        NAME "ast.golden.${example_name}"
         COMMAND "${CMAKE_COMMAND}"
-            "-DAST_PRINTER=$<TARGET_FILE:${AST_PRINTER_TARGET}>"
-            "-DPROFILE_DIR=${PROJECT_BINARY_DIR}/coverage/profiles"
-            "-DOUTPUT_DIR=${PROJECT_BINARY_DIR}/coverage"
-            "-DLLVM_PROFDATA=${LLVM_PROFDATA_EXECUTABLE}"
-            "-DLLVM_COV=${LLVM_COV_EXECUTABLE}"
-            -P "${CMAKE_CURRENT_SOURCE_DIR}/write_coverage.cmake"
-        DEPENDS ${AST_PRINTER_TARGET}
-        WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
-        USES_TERMINAL
+            "-DAST_PRINTER=$<TARGET_FILE:AstPrinter>"
+            "-DSOURCE_FILE=${source_file}"
+            "-DEXPECTED_FILE=${expected_file}"
+            "-DACTUAL_FILE=${actual_file}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_ast_golden_test.cmake"
+    )
+    set_tests_properties("ast.golden.${example_name}" PROPERTIES TIMEOUT 20)
+
+    set(update_target "update-ast-golden-${example_name}")
+    add_custom_target("${update_target}"
+        COMMAND "${CMAKE_COMMAND}"
+            "-DAST_PRINTER=$<TARGET_FILE:AstPrinter>"
+            "-DSOURCE_FILE=${source_file}"
+            "-DEXPECTED_FILE=${expected_file}"
+            "-DACTUAL_FILE=${actual_file}"
+            -DUPDATE_GOLDEN=ON
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_ast_golden_test.cmake"
+        DEPENDS AstPrinter
+        COMMENT "Updating AST golden: ${example_name}"
         VERBATIM
     )
-endif()
+    add_dependencies(update-ast-goldens "${update_target}")
+endfunction()
+
+mycpptools_add_ast_golden_test(basic)
+mycpptools_add_ast_golden_test(clang_extensions)
+mycpptools_add_ast_golden_test(control_flow)
+mycpptools_add_ast_golden_test(coroutines)
+mycpptools_add_ast_golden_test(empty)
+mycpptools_add_ast_golden_test(expressions)
+mycpptools_add_ast_golden_test(function_definitions)
+mycpptools_add_ast_golden_test(lambdas)
+mycpptools_add_ast_golden_test(literals_and_escaping)
+mycpptools_add_ast_golden_test(local_classes)
+mycpptools_add_ast_golden_test(main_file_only)
+mycpptools_add_ast_golden_test(range_for)
+mycpptools_add_ast_golden_test(templates_and_methods)
+mycpptools_add_ast_golden_test(exceptions_and_labels)
+
+add_test(
+    NAME ast.invalid_source
+    COMMAND "${CMAKE_COMMAND}"
+        "-DAST_PRINTER=$<TARGET_FILE:AstPrinter>"
+        "-DSOURCE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/fixtures/ast/invalid.cpp"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_ast_failure_test.cmake"
+)
+set_tests_properties(ast.invalid_source PROPERTIES TIMEOUT 20)

@@ -1,3 +1,11 @@
-add_executable(AstPrinter main.cpp)
+add_executable(AstPrinter
+    main.cpp
+)
+
 mycpptools_configure_target(AstPrinter)
-target_link_libraries(AstPrinter PRIVATE mycpptools)
+mycpptools_configure_clang_target(AstPrinter)
+
+target_link_libraries(AstPrinter PRIVATE
+    mycpptools::clang_ast
+    mycpptools::presentation
+)

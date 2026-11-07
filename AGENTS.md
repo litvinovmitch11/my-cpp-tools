@@ -57,8 +57,47 @@ for them.
 - Output must be deterministic for the same source and toolchain.
 - Escape every user-derived value before writing DOT.
 - Keep analysis logic independent from presentation attributes where practical.
-- `CfgBuilder` and `CdgBuilder` are future project-owned implementations, not
+- `CfgPrinter` and `CdgPrinter` are future project-owned implementations, not
   wrappers around compiler-provided graph builders.
+
+### AST foundation
+
+- The production AST path is `Clang AST -> FunctionAstGraphs ->
+  GraphDotSerializer -> AstPrinter stdout`. Do not add a parallel traversal or
+  direct Clang-to-DOT path.
+- Completed AST graphs own all of their data. They must not retain Clang
+  pointers, source locations, contexts, or other borrowed compiler state.
+- A function AST is a non-empty rooted tree. Its root is a function
+  declaration, every other node has exactly one parent, child ordinals are
+  contiguous in traversal order, and every node is reachable from the root.
+- Collect user-written function definitions whose expansion location is in the
+  main source file. Include methods, constructors, destructors, operators,
+  primary function templates, explicit specializations, and explicitly
+  defaulted or deleted functions. Exclude implicit functions, implicit template
+  instantiations, duplicate function IDs, and lambda call operators as separate
+  function graphs.
+- Keep a lambda expression and its body in the enclosing function graph. Skip
+  implicit declarations as nodes while continuing through their descendants;
+  preserve statements and expressions, including implicit expressions.
+- A nested function definition, such as a method of a local class, belongs only
+  to its own function graph. Do not duplicate its declaration or body in the
+  enclosing function graph.
+- Store source ranges as half-open byte offsets into the main source file using
+  expansion locations. Invalid, cross-file, and non-main-file ranges are
+  unavailable.
+- Keep a USR-based function ID separate from the user-facing qualified name and
+  printed signature. DOT cluster labels include both name and signature so
+  overloads remain distinguishable.
+- Unknown parser nodes remain in the graph with their concrete Clang node name
+  as metadata. Analysis must branch on `AstNodeKind`, never on that string.
+- `buildFunctionAstGraphs` is transactional across a complete `ClangTool` run:
+  success replaces the caller's output, while failure leaves it unchanged and
+  publishes no partial graph.
+- The low-level DOT writer depends only on the C++ standard library. Product
+  styling and AST presentation belong to the presentation layer, not the graph
+  model or Clang adapter.
+- `CfgPrinter`, `CdgPrinter`, and their libraries are neutral placeholders until
+  their project-owned graph models and algorithms are designed.
 
 ### Go backend
 
@@ -97,9 +136,17 @@ the full end-to-end path before completing a cross-component change.
 
 ```bash
 cmake -S cpp -B cpp/build
-cmake --build cpp/build --target AstPrinter
+cmake --build cpp/build
+ctest --test-dir cpp/build --output-on-failure
 cmake --build cpp/build --target format-check
 cmake --build cpp/build --target tidy
+./scripts/cpp-coverage.sh
+```
+
+Update AST golden files only after reviewing an intentional output change:
+
+```bash
+cmake --build cpp/build --target update-ast-goldens
 ```
 
 ### Go
@@ -172,12 +219,10 @@ unless the user explicitly requests that action.
 
 - Keep stable project constraints in `AGENTS.md`.
 - Keep user-facing setup and behavior in `README.md`.
-- Record durable architectural decisions in focused documents under `docs/`.
-- For a cross-component or multi-session MR, create
-  `docs/plans/<short-name>.md` with the objective, non-goals, workstreams,
-  acceptance criteria, current status, and unresolved decisions.
-- Update the plan after meaningful milestones so another task can continue from
-  the repository state without the original chat transcript.
+- Keep temporary plans, milestone status, and unresolved working notes in the
+  Codex task context rather than repository documentation.
+- Add a repository architecture document only when the project owner explicitly
+  requests a user- or contributor-facing document.
 - Do not store raw conversation logs or temporary reasoning in the repository.
 
 ## Using multiple agents

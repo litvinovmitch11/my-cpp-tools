@@ -41,7 +41,7 @@ func TestBuildASTIntegration(t *testing.T) {
 	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if !strings.Contains(body.DOT, "digraph AST") || !strings.Contains(body.DOT, `label="main"`) {
+	if !strings.Contains(body.DOT, "digraph AST") || !strings.Contains(body.DOT, `label="main : int (void)"`) {
 		t.Fatalf("unexpected graph: %s", body.DOT)
 	}
 	if !strings.Contains(body.DOT, `bgcolor="transparent"`) {
