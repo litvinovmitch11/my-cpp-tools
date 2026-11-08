@@ -19,7 +19,7 @@ digraph AST {
     f0_n6 [label="InitListExpr", fillcolor="#4A3B16"];
     f0_n7 [label="ExprWithCleanups", fillcolor="#4A3B16"];
     f0_n8 [label="CoyieldExpr", fillcolor="#4A3B16"];
-    f0_n9 [label="CXXMemberCallExpr", fillcolor="#4A3B16"];
+    f0_n9 [label="CXXMemberCallExpr Task::promise_type::yield_value", fillcolor="#4A3B16"];
     f0_n10 [label="MemberExpr yield_value", fillcolor="#4A3B16"];
     f0_n11 [label="DeclRefExpr __promise", fillcolor="#4A3B16"];
     f0_n12 [label="IntegerLiteral 42", fillcolor="#4A3B16"];

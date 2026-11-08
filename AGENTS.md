@@ -1,259 +1,102 @@
 # AGENTS.md
 
-## Project mission
+## Purpose
 
-`my-cpp-tools` is a learning and engineering project for visualizing static
-analysis of C++ source code. A user enters C++ code in the browser, the Go API
-invokes a native Clang-based tool, and the browser renders the returned graph.
+`my-cpp-tools` visualizes static analysis of C++ source code. The monorepo has
+three components:
 
-The current alpha pipeline is:
+- `cpp/`: Clang adaptation, project-owned graph models, analyses, and native
+  tools;
+- `backend/`: Go HTTP API and bounded native-process orchestration;
+- `web/`: React/TypeScript editing and graph visualization.
+
+The current browser product exposes AST end to end. The native C++ layer also
+contains the project-owned CFG foundation. CDG is not implemented.
+
+## Required agent context
+
+Before changing the repository, read [`.agents/README.md`](.agents/README.md)
+and the task-specific documents it references. They contain the durable
+architecture, exact C++ contracts, validation workflow, security boundaries,
+current milestone, and staged roadmap.
+
+Human-facing documentation has a different purpose:
+
+- [`README.md`](README.md): setup, commands, API, and product behavior;
+- [`docs/architecture.md`](docs/architecture.md): concise system design;
+- [`docs/ast-model.md`](docs/ast-model.md): AST semantics and coverage;
+- [`docs/cfg-model.md`](docs/cfg-model.md): CFG semantics and coverage.
+
+Do not place agent restoration instructions, temporary plans, or raw
+conversation history in human-facing documentation.
+
+## Non-negotiable architecture
+
+1. Clang may parse C++ and provide its AST, source locations, and semantic
+   information.
+2. CFG must be built manually from the project-owned AST. Do not use
+   `clang::CFG`, LLVM analysis passes, compiler CFG output, or a third-party
+   CFG builder.
+3. CDG must eventually be built manually from the project-owned CFG and
+   project-owned control-dependence algorithms.
+4. Graphviz is a layout/rendering dependency only.
+5. Go orchestrates analysis and owns API contracts; it must not duplicate
+   native analysis algorithms.
+6. The web client renders and interacts with results; it must not become the
+   source of truth for analysis semantics.
+7. Compiler dependencies stop at the Clang adapter and CLI composition roots.
+   Core graph, source, AST, CFG, CDG, DOT, and presentation modules remain
+   independent of Clang and LLVM.
+8. Analysis support must not disappear downstream: every valid function AST
+   produces a CFG, and once CDG is implemented every valid function CFG must
+   produce a CDG. Downstream models may omit details irrelevant to their
+   analysis, but must not reject an otherwise valid upstream graph.
+
+The intended analysis dependency direction is:
 
 ```text
-C++ source -> Go API -> AstPrinter -> DOT -> Graphviz Web Worker -> SVG
+graph/source -> ast -> cfg -> cdg
 ```
 
-The repository is a monorepo with three main components:
+`dot` is standard-library-only. `presentation` may depend on domain models and
+`dot`; domain models must not depend on presentation or tools.
 
-- `cpp/`: Clang-based source analysis and graph generation tools.
-- `backend/`: Go HTTP API and native-process orchestration.
-- `web/`: React/TypeScript editor and graph visualization UI.
+## Scope guard
 
-Use `README.md` for user-facing setup instructions. Keep this file focused on
-stable engineering rules for agents and contributors.
+Unless a task explicitly expands scope:
 
-## Original problem and architectural constraints
+- keep the browser product on AST;
+- keep CFG native-only;
+- leave CDG as a neutral placeholder;
+- do not add real-time analysis or unrelated graph types;
+- do not expose the local-only backend to untrusted networks.
 
-The long-term goal is to visualize AST, CFG, and CDG graphs for C++ code while
-learning and implementing the analysis algorithms in this repository.
+## Repository-wide rules
 
-The following constraints are non-negotiable unless the project owner changes
-them explicitly:
+- Use English for code, comments, documentation, diagnostics, tests, commit
+  messages, and GitHub metadata.
+- Prefer domain-specific names and observable-behavior test names.
+- Treat source code and native-tool output as untrusted input.
+- Keep analysis output deterministic and escape all user-derived DOT values.
+- Add regression tests for fixes when practical; cover failure paths as well
+  as successful behavior.
+- Do not commit generated build directories, dependency directories, coverage
+  artifacts, reports, logs, local environment files, or secrets.
+- Do not commit, push, merge, publish, change GitHub settings, or create a
+  release unless the project owner explicitly asks.
 
-1. Clang may parse C++ and expose its AST, source locations, and semantic
-   information.
-2. The project must build its CFG manually from AST nodes and project-owned
-   traversal/analysis code.
-3. The project must build its CDG manually from the project-owned CFG and
-   project-owned control-dependence algorithms.
-4. Do not use `clang::CFG`, LLVM analysis passes, compiler-generated CFG/CDG
-   output, or third-party CFG/CDG builders as the implementation.
-5. Graphviz is only a graph layout/rendering dependency. It must not implement
-   the analysis itself.
-6. Go orchestrates analysis and exposes API contracts; it must not duplicate
-   C++ AST, CFG, or CDG algorithms.
-7. The web client renders and interacts with graph data; it must not become the
-   source of truth for static-analysis semantics.
+## Working method
 
-The current product scope is AST end-to-end. Do not implement CFG, CDG,
-real-time analysis, or unrelated graph types unless the task explicitly asks
-for them.
+1. Inspect the relevant implementation, tests, current diff, and the matching
+   agent contract document.
+2. State assumptions when they change API or analysis semantics.
+3. Implement the smallest coherent change while preserving component and
+   dependency boundaries.
+4. Run focused checks during iteration and the required completion checks from
+   [`.agents/workflow.md`](.agents/workflow.md).
+5. Review the final diff for generated files, language violations, internal
+   path leaks, unrelated edits, and undocumented limitations.
 
-## Component boundaries
-
-### C++
-
-- `AstPrinter` accepts a source file and writes DOT to standard output.
-- Diagnostics go to standard error and a non-zero exit code signals failure.
-- Output must be deterministic for the same source and toolchain.
-- Escape every user-derived value before writing DOT.
-- Keep analysis logic independent from presentation attributes where practical.
-- `CfgPrinter` and `CdgPrinter` are future project-owned implementations, not
-  wrappers around compiler-provided graph builders.
-
-### AST foundation
-
-- The production AST path is `Clang AST -> FunctionAstGraphs ->
-  GraphDotSerializer -> AstPrinter stdout`. Do not add a parallel traversal or
-  direct Clang-to-DOT path.
-- Completed AST graphs own all of their data. They must not retain Clang
-  pointers, source locations, contexts, or other borrowed compiler state.
-- A function AST is a non-empty rooted tree. Its root is a function
-  declaration, every other node has exactly one parent, child ordinals are
-  contiguous in traversal order, and every node is reachable from the root.
-- Collect user-written function definitions whose expansion location is in the
-  main source file. Include methods, constructors, destructors, operators,
-  primary function templates, explicit specializations, and explicitly
-  defaulted or deleted functions. Exclude implicit functions, implicit template
-  instantiations, duplicate function IDs, and lambda call operators as separate
-  function graphs.
-- Keep a lambda expression and its body in the enclosing function graph. Skip
-  implicit declarations as nodes while continuing through their descendants;
-  preserve statements and expressions, including implicit expressions.
-- A nested function definition, such as a method of a local class, belongs only
-  to its own function graph. Do not duplicate its declaration or body in the
-  enclosing function graph.
-- Store source ranges as half-open byte offsets into the main source file using
-  expansion locations. Invalid, cross-file, and non-main-file ranges are
-  unavailable.
-- Keep a USR-based function ID separate from the user-facing qualified name and
-  printed signature. DOT cluster labels include both name and signature so
-  overloads remain distinguishable.
-- Unknown parser nodes remain in the graph with their concrete Clang node name
-  as metadata. Analysis must branch on `AstNodeKind`, never on that string.
-- `buildFunctionAstGraphs` is transactional across a complete `ClangTool` run:
-  success replaces the caller's output, while failure leaves it unchanged and
-  publishes no partial graph.
-- The low-level DOT writer depends only on the C++ standard library. Product
-  styling and AST presentation belong to the presentation layer, not the graph
-  model or Clang adapter.
-- `CfgPrinter`, `CdgPrinter`, and their libraries are neutral placeholders until
-  their project-owned graph models and algorithms are designed.
-
-### Go backend
-
-- `POST /api/v1/ast` accepts source code and returns DOT or a structured error.
-- Treat all source code and native-tool output as untrusted input.
-- Never compile or execute submitted user programs.
-- Preserve request-size, timeout, diagnostics, and output-size limits.
-- Use typed domain errors and avoid leaking internal paths or internal errors.
-- The default server address must remain loopback-only until a sandboxed public
-  deployment is designed.
-
-### Web
-
-- Send source code through the versioned backend API.
-- Run Graphviz in a Web Worker so layout cannot block the UI thread.
-- Sanitize generated SVG before inserting it into the DOM.
-- Keep request cancellation and stale worker-response protection intact.
-- Preserve keyboard-first editor behavior and accessible labels for controls.
-
-## Language and naming
-
-- Use English for code, comments, documentation, UI text, diagnostics, test
-  names, commit messages, and GitHub metadata.
-- Prefer domain names over generic names such as `data`, `item`, or `manager`.
-- Use `AST`, `CFG`, and `CDG` consistently in documentation. Follow each
-  language's established casing conventions in identifiers.
-- Name tests after observable behavior rather than implementation details.
-- Do not add TODO comments without an owner-facing explanation or tracked issue.
-
-## Build and validation commands
-
-Run only the commands relevant to the changed component during iteration. Run
-the full end-to-end path before completing a cross-component change.
-
-### C++
-
-```bash
-cmake -S cpp -B cpp/build
-cmake --build cpp/build
-ctest --test-dir cpp/build --output-on-failure
-cmake --build cpp/build --target format-check
-cmake --build cpp/build --target tidy
-./scripts/cpp-coverage.sh
-```
-
-Update AST golden files only after reviewing an intentional output change:
-
-```bash
-cmake --build cpp/build --target update-ast-goldens
-```
-
-### Go
-
-```bash
-cd backend
-go test ./...
-go test -race ./...
-go vet ./...
-```
-
-Integration tests that invoke the native tool require `AST_PRINTER_PATH`.
-
-### Web
-
-```bash
-cd web
-npm ci
-npm run check
-npm run e2e
-```
-
-### Full pipeline
-
-```bash
-./scripts/e2e.sh
-```
-
-Do not commit generated build directories, dependency directories, coverage
-artifacts, Playwright reports, logs, or local environment files.
-
-## Testing expectations
-
-- Add unit tests for new domain logic and error mappings.
-- Add integration tests at native-process and HTTP boundaries.
-- Add or update E2E tests for user-visible cross-component behavior.
-- Every bug fix should include a regression test when practical.
-- Test failure paths and limits, not only happy paths.
-- Coverage thresholds are quality gates, not a reason to test trivial lines or
-  implementation details.
-
-## Security boundaries
-
-- Never commit secrets, tokens, private keys, credentials, or real `.env`
-  files.
-- Do not print environment variables or secret-bearing configuration in logs.
-- Keep GitHub Actions permissions minimal and pin third-party actions.
-- Treat Clang as a native parser operating on hostile input. Timeout and output
-  limits do not provide filesystem or memory isolation.
-- The alpha backend is local-only and must not be exposed to untrusted networks.
-- A public deployment requires process isolation, filesystem isolation, memory
-  and CPU limits, and bounded concurrency.
-
-## Change workflow
-
-1. Inspect the relevant component and its tests; do not read unrelated files by
-   default.
-2. State assumptions when a decision changes API or analysis semantics.
-3. Implement the smallest coherent change that satisfies the task.
-4. Run focused checks while iterating, then the required completion checks.
-5. Review the final diff for accidental generated files, language violations,
-   internal-path leaks, and unrelated edits.
-6. Report remaining limitations explicitly instead of hiding them behind a
-   successful test run.
-
-Do not commit, push, merge, publish, change GitHub settings, or create releases
-unless the user explicitly requests that action.
-
-## Plans and durable memory
-
-- Keep stable project constraints in `AGENTS.md`.
-- Keep user-facing setup and behavior in `README.md`.
-- Keep temporary plans, milestone status, and unresolved working notes in the
-  Codex task context rather than repository documentation.
-- Add a repository architecture document only when the project owner explicitly
-  requests a user- or contributor-facing document.
-- Do not store raw conversation logs or temporary reasoning in the repository.
-
-## Using multiple agents
-
-The primary agent owns the plan, architectural consistency, shared-file edits,
-integration, and final verification. Delegate only concrete workstreams that
-can proceed independently, for example:
-
-- C++ tests and analysis internals;
-- Go API and runner tests;
-- web unit tests and accessibility;
-- CI/security configuration;
-- independent review of a finished diff.
-
-Give each subagent a bounded task, acceptance criteria, relevant paths, and the
-current architectural constraints. Avoid assigning multiple agents to the same
-files. Subagents should return findings or completed scoped changes to the
-primary agent, which reconciles conflicts and runs integration checks.
-
-Use the repository, this file, the current diff, and a concise task brief as
-shared memory. Do not copy an entire long conversation into every subagent
-unless its history is essential to the task.
-
-## Definition of done
-
-A change is complete when:
-
-- its behavior and boundaries match the requested scope;
-- relevant formatters, linters, builds, and tests pass;
-- cross-component changes pass the full E2E pipeline;
-- tests cover important success and failure behavior;
-- public contracts and documentation are updated;
-- no secrets, generated artifacts, Russian text, or unrelated edits were added;
-- security and operational limitations are stated clearly.
+Stable project context belongs in `.agents/`; user and contributor explanations
+belong in `README.md` and `docs/`; temporary work belongs in the active Codex
+task context.

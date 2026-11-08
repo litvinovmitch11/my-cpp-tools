@@ -48,4 +48,40 @@ digraph AST {
     f1_n1 [label="CompoundStmt", fillcolor="#1F4D3A"];
     f1_n0 -> f1_n1 [label="body"];
   }
+  subgraph cluster_2 {
+    label="linear : int (int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f2_n0 [label="Function linear", fillcolor="#1E3A5F"];
+    f2_n1 [label="ParmVar Value", fillcolor="#1E3A5F"];
+    f2_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f2_n3 [label="DeclStmt", fillcolor="#1F4D3A"];
+    f2_n4 [label="Var Result", fillcolor="#1E3A5F"];
+    f2_n5 [label="BinaryOperator +", fillcolor="#4A3B16"];
+    f2_n6 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f2_n7 [label="DeclRefExpr Value", fillcolor="#4A3B16"];
+    f2_n8 [label="IntegerLiteral 1", fillcolor="#4A3B16"];
+    f2_n9 [label="CompoundAssignOperator *=", fillcolor="#4A3B16"];
+    f2_n10 [label="DeclRefExpr Result", fillcolor="#4A3B16"];
+    f2_n11 [label="IntegerLiteral 2", fillcolor="#4A3B16"];
+    f2_n12 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f2_n13 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f2_n14 [label="DeclRefExpr Result", fillcolor="#4A3B16"];
+    f2_n0 -> f2_n1 [label="parameter"];
+    f2_n0 -> f2_n2 [label="body"];
+    f2_n2 -> f2_n3;
+    f2_n3 -> f2_n4 [label="declaration"];
+    f2_n4 -> f2_n5 [label="initializer"];
+    f2_n5 -> f2_n6 [label="left operand"];
+    f2_n6 -> f2_n7;
+    f2_n5 -> f2_n8 [label="right operand"];
+    f2_n2 -> f2_n9;
+    f2_n9 -> f2_n10 [label="left operand"];
+    f2_n9 -> f2_n11 [label="right operand"];
+    f2_n2 -> f2_n12;
+    f2_n12 -> f2_n13 [label="return value"];
+    f2_n13 -> f2_n14;
+  }
 }

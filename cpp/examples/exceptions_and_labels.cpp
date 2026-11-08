@@ -1,8 +1,10 @@
+int parse(int Value);
+
 int parseOrDefault(int Value) {
   try {
     if (Value < 0)
       throw Value;
-    return Value;
+    return parse(Value);
   } catch (int) {
     return 0;
   }

@@ -25,7 +25,7 @@ namespace {
 
 struct AstGraphBuildState {
   ast::FunctionAstGraphs Graphs;
-  std::set<ast::FunctionId> FunctionIds;
+  std::set<source::FunctionId> FunctionIds;
   bool Failed = false;
 };
 

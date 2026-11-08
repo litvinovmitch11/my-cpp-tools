@@ -1,0 +1,57 @@
+digraph CFG {
+  rankdir="TB";
+  bgcolor="transparent";
+  graph [fontname="Arial", fontcolor="#D4D4D4", pad="0.2", nodesep="0.25", ranksep="0.45"];
+  node [shape="box", style="rounded,filled", fontname="Arial", fontsize="10", fontcolor="#F3F4F6", color="#4B5563", margin="0.12,0.08"];
+  edge [color="#6B7280", penwidth="1.0", arrowsize="0.65", fontname="Arial", fontsize="9", fontcolor="#D4D4D4"];
+  subgraph cluster_0 {
+    label="add : int (int, int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f0_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f0_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f0_n2 [label="Var Sum", fillcolor="#1E3A5F"];
+    f0_n3 [label="BinaryOperator +", fillcolor="#1E3A5F"];
+    f0_n4 [label="return", fillcolor="#4A3B16"];
+    f0_n5 [label="ImplicitCastExpr", fillcolor="#1E3A5F"];
+    f0_n3 -> f0_n2;
+    f0_n4 -> f0_n1;
+    f0_n5 -> f0_n4;
+    f0_n2 -> f0_n5;
+    f0_n0 -> f0_n3;
+  }
+  subgraph cluster_1 {
+    label="doNothing : void (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f1_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f1_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f1_n2 [label="empty", shape="ellipse", style="filled", fillcolor="transparent"];
+    f1_n0 -> f1_n2;
+    f1_n2 -> f1_n1;
+  }
+  subgraph cluster_2 {
+    label="linear : int (int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f2_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f2_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f2_n2 [label="Var Result", fillcolor="#1E3A5F"];
+    f2_n3 [label="BinaryOperator +", fillcolor="#1E3A5F"];
+    f2_n4 [label="CompoundAssignOperator *=", fillcolor="#1E3A5F"];
+    f2_n5 [label="return", fillcolor="#4A3B16"];
+    f2_n6 [label="ImplicitCastExpr", fillcolor="#1E3A5F"];
+    f2_n3 -> f2_n2;
+    f2_n2 -> f2_n4;
+    f2_n5 -> f2_n1;
+    f2_n6 -> f2_n5;
+    f2_n4 -> f2_n6;
+    f2_n0 -> f2_n3;
+  }
+}

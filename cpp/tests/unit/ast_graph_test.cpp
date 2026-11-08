@@ -7,6 +7,7 @@
 #include <utility>
 
 namespace ast = mycpptools::ast;
+namespace source = mycpptools::source;
 
 static ast::AstNode makeNode(ast::AstNodeKind Kind, std::string Label) {
   ast::AstNodeMetadata Metadata;
@@ -15,10 +16,10 @@ static ast::AstNode makeNode(ast::AstNodeKind Kind, std::string Label) {
                       ast::AstNodeDisplay{std::move(Label)}};
 }
 
-static ast::FunctionInfo makeFunctionInfo() {
-  return ast::FunctionInfo{ast::FunctionId("function-id"), "function",
-                           "sample::function", "int ()",
-                           ast::SourceRange{0, 10}};
+static source::FunctionInfo makeFunctionInfo() {
+  return source::FunctionInfo{source::FunctionId("function-id"), "function",
+                              "sample::function", "int ()",
+                              source::SourceRange{0, 10}};
 }
 
 static ast::AstGraph makeValidGraph() {
@@ -40,13 +41,13 @@ static void acceptsRootedTree() {
 }
 
 static void rejectsInvalidFunctionId() {
-  MYCPPTOOLS_EXPECT_THROWS(ast::FunctionId(""), std::invalid_argument);
+  MYCPPTOOLS_EXPECT_THROWS(source::FunctionId(""), std::invalid_argument);
 }
 
 static void comparesFunctionIdsByValue() {
-  const ast::FunctionId First("first");
-  const ast::FunctionId FirstCopy("first");
-  const ast::FunctionId Second("second");
+  const source::FunctionId First("first");
+  const source::FunctionId FirstCopy("first");
+  const source::FunctionId Second("second");
 
   MYCPPTOOLS_EXPECT_TRUE(First == FirstCopy);
   MYCPPTOOLS_EXPECT_TRUE(First != Second);

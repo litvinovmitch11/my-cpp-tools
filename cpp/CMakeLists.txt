@@ -35,6 +35,12 @@ add_library(mycpptools_graph STATIC
 add_library(mycpptools::graph ALIAS mycpptools_graph)
 mycpptools_configure_target(mycpptools_graph)
 
+add_library(mycpptools_source STATIC
+    src/source/function_info.cpp
+)
+add_library(mycpptools::source ALIAS mycpptools_source)
+mycpptools_configure_target(mycpptools_source)
+
 add_library(mycpptools_ast STATIC
     src/ast/ast_graph.cpp
 )
@@ -42,6 +48,7 @@ add_library(mycpptools::ast ALIAS mycpptools_ast)
 mycpptools_configure_target(mycpptools_ast)
 target_link_libraries(mycpptools_ast PUBLIC
     mycpptools::graph
+    mycpptools::source
 )
 
 add_library(mycpptools_clang_ast STATIC
@@ -56,8 +63,8 @@ mycpptools_configure_clang_target(mycpptools_clang_ast)
 target_link_libraries(mycpptools_clang_ast
     PUBLIC
         mycpptools::ast
-        clangTooling
     PRIVATE
+        clangTooling
         clangAST
         clangBasic
         clangFrontend
@@ -67,6 +74,7 @@ target_link_libraries(mycpptools_clang_ast
 
 add_library(mycpptools_cfg STATIC
     src/cfg/cfg_builder.cpp
+    src/cfg/cfg_graph.cpp
 )
 add_library(mycpptools::cfg ALIAS mycpptools_cfg)
 mycpptools_configure_target(mycpptools_cfg)
@@ -79,9 +87,6 @@ add_library(mycpptools_cdg STATIC
 )
 add_library(mycpptools::cdg ALIAS mycpptools_cdg)
 mycpptools_configure_target(mycpptools_cdg)
-target_link_libraries(mycpptools_cdg PUBLIC
-    mycpptools::cfg
-)
 
 add_library(mycpptools_dot STATIC
     src/dot/dot_writer.cpp
@@ -97,6 +102,7 @@ mycpptools_configure_target(mycpptools_presentation)
 target_link_libraries(mycpptools_presentation
     PUBLIC
         mycpptools::ast
+        mycpptools::cfg
     PRIVATE
         mycpptools::dot
 )
@@ -111,8 +117,11 @@ if(BUILD_TESTING)
     mycpptools_add_coverage_target(
         TARGETS
             AstPrinter
+            CfgPrinter
             directed_graph_test
             ast_graph_test
+            cfg_graph_test
+            cfg_builder_test
             dot_writer_test
             graph_dot_serializer_test
         MINIMUM_LINE_PERCENT 60

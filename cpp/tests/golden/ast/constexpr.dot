@@ -1,0 +1,93 @@
+digraph AST {
+  rankdir="TB";
+  bgcolor="transparent";
+  graph [fontname="Arial", fontcolor="#D4D4D4", pad="0.2", nodesep="0.25", ranksep="0.45"];
+  node [shape="box", style="rounded,filled", fontname="Arial", fontsize="10", fontcolor="#F3F4F6", color="#4B5563", margin="0.12,0.08"];
+  edge [color="#6B7280", penwidth="1.0", arrowsize="0.65", fontname="Arial", fontsize="9", fontcolor="#D4D4D4"];
+  subgraph cluster_0 {
+    label="concrete : int (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f0_n0 [label="Function concrete", fillcolor="#1E3A5F"];
+    f0_n1 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f0_n2 [label="IfStmt", fillcolor="#1F4D3A"];
+    f0_n3 [label="ConstantExpr", fillcolor="#4A3B16"];
+    f0_n4 [label="CXXBoolLiteralExpr true", fillcolor="#4A3B16"];
+    f0_n5 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f0_n6 [label="IntegerLiteral 1", fillcolor="#4A3B16"];
+    f0_n7 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f0_n8 [label="IntegerLiteral 2", fillcolor="#4A3B16"];
+    f0_n0 -> f0_n1 [label="body"];
+    f0_n1 -> f0_n2;
+    f0_n2 -> f0_n3 [label="condition"];
+    f0_n3 -> f0_n4;
+    f0_n2 -> f0_n5 [label="then"];
+    f0_n5 -> f0_n6 [label="return value"];
+    f0_n2 -> f0_n7 [label="else"];
+    f0_n7 -> f0_n8 [label="return value"];
+  }
+  subgraph cluster_1 {
+    label="discardedThrowingBranch : int (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f1_n0 [label="Function discardedThrowingBranch", fillcolor="#1E3A5F"];
+    f1_n1 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f1_n2 [label="IfStmt", fillcolor="#1F4D3A"];
+    f1_n3 [label="ConstantExpr", fillcolor="#4A3B16"];
+    f1_n4 [label="CXXBoolLiteralExpr true", fillcolor="#4A3B16"];
+    f1_n5 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f1_n6 [label="IntegerLiteral 1", fillcolor="#4A3B16"];
+    f1_n7 [label="CXXThrowExpr", fillcolor="#4A3B16"];
+    f1_n8 [label="IntegerLiteral 2", fillcolor="#4A3B16"];
+    f1_n0 -> f1_n1 [label="body"];
+    f1_n1 -> f1_n2;
+    f1_n2 -> f1_n3 [label="condition"];
+    f1_n3 -> f1_n4;
+    f1_n2 -> f1_n5 [label="then"];
+    f1_n5 -> f1_n6 [label="return value"];
+    f1_n2 -> f1_n7 [label="else"];
+    f1_n7 -> f1_n8 [label="thrown value"];
+  }
+  subgraph cluster_2 {
+    label="dependent : int (Value)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f2_n0 [label="Function dependent", fillcolor="#1E3A5F"];
+    f2_n1 [label="ParmVar Input", fillcolor="#1E3A5F"];
+    f2_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f2_n3 [label="IfStmt", fillcolor="#1F4D3A"];
+    f2_n4 [label="BinaryOperator >", fillcolor="#4A3B16"];
+    f2_n5 [label="UnaryExprOrTypeTraitExpr", fillcolor="#4A3B16"];
+    f2_n6 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f2_n7 [label="IntegerLiteral 4", fillcolor="#4A3B16"];
+    f2_n8 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f2_n9 [label="BinaryOperator +", fillcolor="#4A3B16"];
+    f2_n10 [label="DeclRefExpr Input", fillcolor="#4A3B16"];
+    f2_n11 [label="IntegerLiteral 1", fillcolor="#4A3B16"];
+    f2_n12 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f2_n13 [label="BinaryOperator -", fillcolor="#4A3B16"];
+    f2_n14 [label="DeclRefExpr Input", fillcolor="#4A3B16"];
+    f2_n15 [label="IntegerLiteral 1", fillcolor="#4A3B16"];
+    f2_n0 -> f2_n1 [label="parameter"];
+    f2_n0 -> f2_n2 [label="body"];
+    f2_n2 -> f2_n3;
+    f2_n3 -> f2_n4 [label="condition"];
+    f2_n4 -> f2_n5 [label="left operand"];
+    f2_n4 -> f2_n6 [label="right operand"];
+    f2_n6 -> f2_n7;
+    f2_n3 -> f2_n8 [label="then"];
+    f2_n8 -> f2_n9 [label="return value"];
+    f2_n9 -> f2_n10 [label="left operand"];
+    f2_n9 -> f2_n11 [label="right operand"];
+    f2_n3 -> f2_n12 [label="else"];
+    f2_n12 -> f2_n13 [label="return value"];
+    f2_n13 -> f2_n14 [label="left operand"];
+    f2_n13 -> f2_n15 [label="right operand"];
+  }
+}

@@ -30,11 +30,11 @@ public:
   [[nodiscard]] ast::AstEdgeRole edgeRole(const clang::DynTypedNode &Parent,
                                           const clang::Stmt &Child) const;
 
-  [[nodiscard]] ast::FunctionInfo
+  [[nodiscard]] source::FunctionInfo
   makeFunctionInfo(const clang::FunctionDecl &Function) const;
 
 private:
-  [[nodiscard]] std::optional<ast::SourceRange>
+  [[nodiscard]] std::optional<source::SourceRange>
   sourceRange(clang::SourceRange Range) const;
   [[nodiscard]] std::string sourceText(clang::SourceRange Range) const;
 

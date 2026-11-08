@@ -20,7 +20,7 @@ endfunction()
 function(mycpptools_configure_llvm_target target)
     separate_arguments(llvm_compile_options NATIVE_COMMAND "${LLVM_DEFINITIONS}")
 
-    target_include_directories(${target} SYSTEM PUBLIC
+    target_include_directories(${target} SYSTEM PRIVATE
         ${LLVM_INCLUDE_DIRS}
     )
     target_compile_options(${target} PRIVATE
@@ -31,7 +31,7 @@ endfunction()
 function(mycpptools_configure_clang_target target)
     mycpptools_configure_llvm_target(${target})
 
-    target_include_directories(${target} SYSTEM PUBLIC
+    target_include_directories(${target} SYSTEM PRIVATE
         ${CLANG_INCLUDE_DIRS}
     )
 endfunction()

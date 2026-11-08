@@ -8,6 +8,9 @@ The model is intentionally smaller and more stable than Clang's complete AST.
 Clang parses C++ and supplies semantic information, while `my-cpp-tools` copies
 the relevant data into an owning graph that does not retain compiler objects.
 
+The status vocabulary shared by all analysis stages is documented in
+[Analysis support and guarantees](analysis-support.md).
+
 ## Pipeline and ownership
 
 ```text
@@ -122,8 +125,10 @@ into a function graph.
 | `CallExpression` | function and member calls, including overloaded operator calls represented by Clang as calls |
 | `BinaryExpression` | built-in binary operator |
 | `UnaryExpression` | built-in unary operator |
-| `ConditionalExpression` | `condition ? left : right` |
+| `ConditionalExpression` | `condition ? left : right` and GNU `left ?: right` |
+| `CompileTimeConditionalExpression` | GNU `__builtin_choose_expr` |
 | `DeclarationReferenceExpression` | reference to a declaration |
+| `AddressOfLabelExpression` | address of a source label used by indirect goto |
 | `MemberExpression` | member access |
 | `CastExpression` | explicit and implicit casts |
 | `LiteralExpression` | integer, floating-point, character, string, Boolean, and null-pointer literals |
@@ -145,7 +150,7 @@ otherwise the edge remains `Child`.
 | `Declaration` | declaration owned by a declaration statement |
 | `Parameter` | function parameter |
 | `Body` | function or loop body, or the materialized coroutine body |
-| `Initializer` | variable initializer or control-statement initializer |
+| `Initializer` | variable initializer, constructor initializer expression, control-statement initializer, or the common expression of GNU `left ?: right` |
 | `Condition` | condition of a branch, loop, switch, or conditional expression |
 | `Increment` | classic or range-for increment expression |
 | `ThenBranch`, `ElseBranch` | branches of `if` or a conditional expression |
@@ -161,6 +166,7 @@ otherwise the edge remains `Child`.
 | `LabelBody` | statement following a source label |
 | `LambdaBody` | body of a lambda expression |
 | `TryBody`, `Handler`, `CatchBody` | parts of C++ exception handling |
+| `ExceptionDeclaration` | declaration introduced by a typed catch handler |
 | `ThrownValue` | value of a throw expression |
 
 ## Stored metadata
@@ -168,10 +174,25 @@ otherwise the edge remains `Child`.
 Nodes can carry:
 
 - exact Clang node name;
-- unqualified and qualified declaration names;
+- unqualified and qualified declaration names, plus directly resolved callees;
 - printed type name;
 - literal source spelling;
 - operator spelling;
+- direct-goto target and source-label names;
+- address-taken and assembly-goto target labels;
+- original case-label spelling;
+- caught type and whether a handler is catch-all;
+- selected or dependent state for `if constexpr` and
+  `__builtin_choose_expr`;
+- whether an inline assembly statement is `asm goto`;
+- whether a wrapper expression is control-flow transparent;
+- whether an operation is conservatively considered potentially throwing;
+- whether a direct call is known not to return normally;
+- whether a function declaration is an ordinary function, constructor, or
+  destructor;
+- whether range initialization, comparison, element access, and increment may
+  throw;
+- whether child expressions occur in an unevaluated context;
 - a source range;
 - a separate presentation label.
 
@@ -204,19 +225,24 @@ these examples:
 | Example | Main behavior covered |
 | --- | --- |
 | `basic` | multiple functions, parameters, local declarations, binary expressions, and returns |
-| `clang_extensions` | indirect goto, case ranges, inline assembly, and otherwise unclassified statements |
+| `branches` | nested conditions, calls, short-circuit operands, and conditional expressions |
+| `clang_extensions` | indirect goto, case ranges, inline assembly, `asm goto`, GNU conditionals, compile-time choice expressions, and statement expressions |
+| `constexpr` | concrete and dependent `if constexpr` branches |
 | `control_flow` | `if`, classic `for`, `while`, `do`, `switch`, `case`, `default`, `break`, and `continue` |
 | `coroutines` | coroutine body materialization, `co_await`, `co_yield`, and `co_return` |
 | `empty` | a valid translation unit with no collected function |
-| `expressions` | unary, binary, conditional, cast, pointer, subscript, floating, Boolean, and null-pointer expressions |
+| `expressions` | unary, binary, conditional, cast, pointer, subscript, unevaluated, and assignment expressions |
 | `function_definitions` | defaulted and deleted special members, destructor, overloaded call operator, explicit specialization, and exclusion of an implicit template instantiation |
-| `lambdas` | captures, lambda body ownership, parameters, and invocation |
+| `lambdas` | captures, throwing capture initializers, lambda body ownership, parameters, and invocation |
 | `literals_and_escaping` | string and character literals plus safe DOT escaping |
-| `local_classes` | local record structure and isolation of constructor and method bodies from the enclosing function |
+| `local_classes` | local record structure, constructor initializer execution, and isolation of constructor and method bodies from the enclosing function |
+| `loops` | focused loop forms, nesting, break, and continue |
 | `main_file_only` | exclusion of a function definition from an included header |
 | `range_for` | range-for structure and compiler-created traversal details |
+| `switch_and_goto` | switch cases, fallthrough, direct goto, labels, and call conditions |
 | `templates_and_methods` | primary function templates, `if constexpr`, fields, and member functions |
 | `exceptions_and_labels` | `try`, `catch`, `throw`, labels, and direct `goto` |
+| `unreachable` | AST retention for statements following an unconditional transfer |
 
 An additional integration test verifies that invalid C++ produces diagnostics,
 a non-zero status, and no partial DOT output.
@@ -232,7 +258,7 @@ The following behavior does not yet have a dedicated regression test:
 
 These are coverage gaps, not promises that the current output is wrong. Unknown
 or unclassified nodes are still retained under their generic project category.
-New dedicated tests should be added before downstream CFG logic starts relying
+New dedicated tests should be added before downstream analysis starts relying
 on the detailed shape of one of these constructs.
 
 ## Deliberate non-goals
@@ -247,6 +273,7 @@ The AST graph does not currently model:
 - a DOT shape that remains byte-identical across different Clang major
   versions.
 
-CFG and CDG construction are separate future stages. They must use the
-project-owned graph model and algorithms rather than `clang::CFG` or LLVM
+CFG and CDG construction are separate analysis stages. The CFG implementation
+is documented in [CFG graph model and coverage](cfg-model.md). Both stages use
+project-owned graph models and algorithms rather than `clang::CFG` or LLVM
 analysis passes.
