@@ -1,0 +1,115 @@
+digraph CFG {
+  rankdir="TB";
+  bgcolor="transparent";
+  graph [fontname="Arial", fontcolor="#D4D4D4", pad="0.2", nodesep="0.25", ranksep="0.45"];
+  node [shape="box", style="rounded,filled", fontname="Arial", fontsize="10", fontcolor="#F3F4F6", color="#4B5563", margin="0.12,0.08"];
+  edge [color="#6B7280", penwidth="1.0", arrowsize="0.65", fontname="Arial", fontsize="9", fontcolor="#D4D4D4"];
+  subgraph cluster_0 {
+    label="combine : int (int, int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f0_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f0_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f0_n2 [label="Var Product", fillcolor="#1E3A5F"];
+    f0_n3 [label="BinaryOperator *", fillcolor="#1E3A5F"];
+    f0_n4 [label="Var Magnitude", fillcolor="#1E3A5F"];
+    f0_n5 [label="BinaryOperator <", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f0_n6 [label="UnaryOperator -", fillcolor="#1E3A5F"];
+    f0_n7 [label="ImplicitCastExpr", fillcolor="#1E3A5F"];
+    f0_n8 [label="return", fillcolor="#4A3B16"];
+    f0_n9 [label="CXXStaticCastExpr", fillcolor="#1E3A5F"];
+    f0_n3 -> f0_n2;
+    f0_n5 -> f0_n6 [label="true"];
+    f0_n5 -> f0_n7 [label="false"];
+    f0_n6 -> f0_n4;
+    f0_n7 -> f0_n4;
+    f0_n2 -> f0_n5;
+    f0_n8 -> f0_n1;
+    f0_n9 -> f0_n8;
+    f0_n4 -> f0_n9;
+    f0_n0 -> f0_n3;
+  }
+  subgraph cluster_1 {
+    label="compare : _Bool (const char *, char)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f1_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f1_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f1_n2 [label="return", fillcolor="#4A3B16"];
+    f1_n3 [label="BinaryOperator !=", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f1_n4 [label="BinaryOperator ==", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f1_n2 -> f1_n1;
+    f1_n3 -> f1_n4 [label="true"];
+    f1_n4 -> f1_n2 [label="true"];
+    f1_n3 -> f1_n2 [label="false"];
+    f1_n4 -> f1_n2 [label="false"];
+    f1_n0 -> f1_n3;
+  }
+  subgraph cluster_2 {
+    label="unevaluatedExpressions : int (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f2_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f2_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f2_n2 [label="return", fillcolor="#4A3B16"];
+    f2_n3 [label="ImplicitCastExpr", fillcolor="#1E3A5F"];
+    f2_n2 -> f2_n1;
+    f2_n3 -> f2_n2;
+    f2_n0 -> f2_n3;
+  }
+  subgraph cluster_3 {
+    label="assignmentOrder : void (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f3_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f3_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f3_n2 [label="CallExpr nextValue", fillcolor="#1E3A5F"];
+    f3_n3 [label="CallExpr storage", fillcolor="#1E3A5F"];
+    f3_n4 [label="ArraySubscriptExpr", fillcolor="#1E3A5F"];
+    f3_n5 [label="BinaryOperator =", fillcolor="#1E3A5F"];
+    f3_n2 -> f3_n1 [label="throws"];
+    f3_n3 -> f3_n1 [label="throws"];
+    f3_n3 -> f3_n4;
+    f3_n2 -> f3_n3;
+    f3_n4 -> f3_n5;
+    f3_n0 -> f3_n2;
+    f3_n5 -> f3_n1;
+  }
+  subgraph cluster_4 {
+    label="assignmentCondition : _Bool (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f4_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f4_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f4_n2 [label="BinaryOperator =", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f4_n3 [label="CallExpr nextValue", fillcolor="#1E3A5F"];
+    f4_n4 [label="CallExpr storage", fillcolor="#1E3A5F"];
+    f4_n5 [label="ArraySubscriptExpr", fillcolor="#1E3A5F"];
+    f4_n6 [label="return", fillcolor="#4A3B16"];
+    f4_n7 [label="CXXBoolLiteralExpr true", fillcolor="#1E3A5F"];
+    f4_n8 [label="return", fillcolor="#4A3B16"];
+    f4_n9 [label="CXXBoolLiteralExpr false", fillcolor="#1E3A5F"];
+    f4_n3 -> f4_n1 [label="throws"];
+    f4_n4 -> f4_n1 [label="throws"];
+    f4_n4 -> f4_n5;
+    f4_n3 -> f4_n4;
+    f4_n5 -> f4_n2;
+    f4_n6 -> f4_n1;
+    f4_n7 -> f4_n6;
+    f4_n2 -> f4_n7 [label="true"];
+    f4_n8 -> f4_n1;
+    f4_n9 -> f4_n8;
+    f4_n2 -> f4_n9 [label="false"];
+    f4_n0 -> f4_n3;
+  }
+}

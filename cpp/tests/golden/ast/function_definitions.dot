@@ -78,7 +78,7 @@ digraph AST {
     f5_n1 [label="ParmVar Value", fillcolor="#1E3A5F"];
     f5_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
     f5_n3 [label="ReturnStmt", fillcolor="#1F4D3A"];
-    f5_n4 [label="CallExpr", fillcolor="#4A3B16"];
+    f5_n4 [label="CallExpr identity", fillcolor="#4A3B16"];
     f5_n5 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
     f5_n6 [label="DeclRefExpr identity", fillcolor="#4A3B16"];
     f5_n7 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
@@ -102,7 +102,7 @@ digraph AST {
     f6_n1 [label="ParmVar Value", fillcolor="#1E3A5F"];
     f6_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
     f6_n3 [label="ReturnStmt", fillcolor="#1F4D3A"];
-    f6_n4 [label="CallExpr", fillcolor="#4A3B16"];
+    f6_n4 [label="CallExpr identity", fillcolor="#4A3B16"];
     f6_n5 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
     f6_n6 [label="DeclRefExpr identity", fillcolor="#4A3B16"];
     f6_n7 [label="ImplicitCastExpr", fillcolor="#4A3B16"];

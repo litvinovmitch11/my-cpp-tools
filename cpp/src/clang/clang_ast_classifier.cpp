@@ -2,6 +2,7 @@
 
 #include "clang/AST/ASTTypeTraits.h"
 #include "clang/AST/Decl.h"
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/Stmt.h"
@@ -87,10 +88,14 @@ public:
       return ast::AstNodeKind::BinaryExpression;
     if (llvm::isa<clang::UnaryOperator>(Statement))
       return ast::AstNodeKind::UnaryExpression;
-    if (llvm::isa<clang::ConditionalOperator>(Statement))
+    if (llvm::isa<clang::AbstractConditionalOperator>(Statement))
       return ast::AstNodeKind::ConditionalExpression;
+    if (llvm::isa<clang::ChooseExpr>(Statement))
+      return ast::AstNodeKind::CompileTimeConditionalExpression;
     if (llvm::isa<clang::DeclRefExpr>(Statement))
       return ast::AstNodeKind::DeclarationReferenceExpression;
+    if (llvm::isa<clang::AddrLabelExpr>(Statement))
+      return ast::AstNodeKind::AddressOfLabelExpression;
     if (llvm::isa<clang::MemberExpr>(Statement))
       return ast::AstNodeKind::MemberExpression;
     if (llvm::isa<clang::CastExpr>(Statement))
@@ -137,9 +142,14 @@ private:
   }
 
   [[nodiscard]] static ast::AstEdgeRole classify(const clang::Stmt &Parent,
-                                                 const clang::Decl &) {
-    return llvm::isa<clang::DeclStmt>(Parent) ? ast::AstEdgeRole::Declaration
-                                              : ast::AstEdgeRole::Child;
+                                                 const clang::Decl &Child) {
+    if (llvm::isa<clang::DeclStmt>(Parent))
+      return ast::AstEdgeRole::Declaration;
+    if (const auto *Catch = llvm::dyn_cast<clang::CXXCatchStmt>(&Parent)) {
+      if (Catch->getExceptionDecl() == &Child)
+        return ast::AstEdgeRole::ExceptionDeclaration;
+    }
+    return ast::AstEdgeRole::Child;
   }
 
   [[nodiscard]] static ast::AstEdgeRole classify(const clang::Decl &Parent,
@@ -147,6 +157,15 @@ private:
     if (const auto *Function = llvm::dyn_cast<clang::FunctionDecl>(&Parent)) {
       if (Function->getBody() == &Child)
         return ast::AstEdgeRole::Body;
+    }
+
+    if (const auto *Constructor =
+            llvm::dyn_cast<clang::CXXConstructorDecl>(&Parent)) {
+      for (const clang::CXXCtorInitializer *Initializer :
+           Constructor->inits()) {
+        if (Initializer->getInit() == &Child)
+          return ast::AstEdgeRole::Initializer;
+      }
     }
 
     if (const auto *Variable = llvm::dyn_cast<clang::VarDecl>(&Parent)) {
@@ -202,7 +221,9 @@ private:
     if (const auto *Expression = llvm::dyn_cast<clang::UnaryOperator>(&Parent))
       return classify(*Expression, Child);
     if (const auto *Expression =
-            llvm::dyn_cast<clang::ConditionalOperator>(&Parent))
+            llvm::dyn_cast<clang::AbstractConditionalOperator>(&Parent))
+      return classify(*Expression, Child);
+    if (const auto *Expression = llvm::dyn_cast<clang::ChooseExpr>(&Parent))
       return classify(*Expression, Child);
     if (const auto *Expression = llvm::dyn_cast<clang::CallExpr>(&Parent))
       return classify(*Expression, Child);
@@ -243,14 +264,10 @@ private:
   classify(const clang::CXXForRangeStmt &Parent, const clang::Stmt &Child) {
     if (Parent.getInit() == &Child)
       return ast::AstEdgeRole::Initializer;
-    if (Parent.getRangeStmt() == &Child)
+    if (Parent.getRangeInit() == &Child)
       return ast::AstEdgeRole::Range;
     if (Parent.getLoopVarStmt() == &Child)
       return ast::AstEdgeRole::LoopVariable;
-    if (Parent.getCond() == &Child)
-      return ast::AstEdgeRole::Condition;
-    if (Parent.getInc() == &Child)
-      return ast::AstEdgeRole::Increment;
     if (Parent.getBody() == &Child)
       return ast::AstEdgeRole::Body;
     return ast::AstEdgeRole::Child;
@@ -385,12 +402,29 @@ private:
   }
 
   [[nodiscard]] static ast::AstEdgeRole
-  classify(const clang::ConditionalOperator &Parent, const clang::Stmt &Child) {
+  classify(const clang::AbstractConditionalOperator &Parent,
+           const clang::Stmt &Child) {
+    if (const auto *Binary =
+            llvm::dyn_cast<clang::BinaryConditionalOperator>(&Parent)) {
+      if (Binary->getCommon() == &Child)
+        return ast::AstEdgeRole::Initializer;
+    }
     if (Parent.getCond() == &Child)
       return ast::AstEdgeRole::Condition;
     if (Parent.getTrueExpr() == &Child)
       return ast::AstEdgeRole::ThenBranch;
     if (Parent.getFalseExpr() == &Child)
+      return ast::AstEdgeRole::ElseBranch;
+    return ast::AstEdgeRole::Child;
+  }
+
+  [[nodiscard]] static ast::AstEdgeRole
+  classify(const clang::ChooseExpr &Parent, const clang::Stmt &Child) {
+    if (Parent.getCond() == &Child)
+      return ast::AstEdgeRole::Condition;
+    if (Parent.getLHS() == &Child)
+      return ast::AstEdgeRole::ThenBranch;
+    if (Parent.getRHS() == &Child)
       return ast::AstEdgeRole::ElseBranch;
     return ast::AstEdgeRole::Child;
   }

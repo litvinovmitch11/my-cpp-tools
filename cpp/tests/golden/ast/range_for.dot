@@ -37,7 +37,7 @@ digraph AST {
     f0_n3 -> f0_n7;
     f0_n7 -> f0_n8 [label="loop variable"];
     f0_n8 -> f0_n9 [label="declaration"];
-    f0_n7 -> f0_n10;
+    f0_n7 -> f0_n10 [label="range"];
     f0_n7 -> f0_n11 [label="body"];
     f0_n11 -> f0_n12 [label="left operand"];
     f0_n11 -> f0_n13 [label="right operand"];
@@ -45,5 +45,59 @@ digraph AST {
     f0_n3 -> f0_n15;
     f0_n15 -> f0_n16 [label="return value"];
     f0_n16 -> f0_n17;
+  }
+  subgraph cluster_1 {
+    label="sumThrowingRange : int (ThrowingRange &)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f1_n0 [label="Function sumThrowingRange", fillcolor="#1E3A5F"];
+    f1_n1 [label="ParmVar Range", fillcolor="#1E3A5F"];
+    f1_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f1_n3 [label="DeclStmt", fillcolor="#1F4D3A"];
+    f1_n4 [label="Var Result", fillcolor="#1E3A5F"];
+    f1_n5 [label="IntegerLiteral 0", fillcolor="#4A3B16"];
+    f1_n6 [label="CXXTryStmt", fillcolor="#1F4D3A"];
+    f1_n7 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f1_n8 [label="CXXForRangeStmt", fillcolor="#1F4D3A"];
+    f1_n9 [label="DeclStmt", fillcolor="#1F4D3A"];
+    f1_n10 [label="Var Value", fillcolor="#1E3A5F"];
+    f1_n11 [label="DeclRefExpr Range", fillcolor="#4A3B16"];
+    f1_n12 [label="CompoundAssignOperator +=", fillcolor="#4A3B16"];
+    f1_n13 [label="DeclRefExpr Result", fillcolor="#4A3B16"];
+    f1_n14 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f1_n15 [label="DeclRefExpr Value", fillcolor="#4A3B16"];
+    f1_n16 [label="CXXCatchStmt", fillcolor="#1F4D3A"];
+    f1_n17 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f1_n18 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f1_n19 [label="UnaryOperator -", fillcolor="#4A3B16"];
+    f1_n20 [label="IntegerLiteral 1", fillcolor="#4A3B16"];
+    f1_n21 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f1_n22 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f1_n23 [label="DeclRefExpr Result", fillcolor="#4A3B16"];
+    f1_n0 -> f1_n1 [label="parameter"];
+    f1_n0 -> f1_n2 [label="body"];
+    f1_n2 -> f1_n3;
+    f1_n3 -> f1_n4 [label="declaration"];
+    f1_n4 -> f1_n5 [label="initializer"];
+    f1_n2 -> f1_n6;
+    f1_n6 -> f1_n7 [label="try body"];
+    f1_n7 -> f1_n8;
+    f1_n8 -> f1_n9 [label="loop variable"];
+    f1_n9 -> f1_n10 [label="declaration"];
+    f1_n8 -> f1_n11 [label="range"];
+    f1_n8 -> f1_n12 [label="body"];
+    f1_n12 -> f1_n13 [label="left operand"];
+    f1_n12 -> f1_n14 [label="right operand"];
+    f1_n14 -> f1_n15;
+    f1_n6 -> f1_n16 [label="handler"];
+    f1_n16 -> f1_n17 [label="catch body"];
+    f1_n17 -> f1_n18;
+    f1_n18 -> f1_n19 [label="return value"];
+    f1_n19 -> f1_n20 [label="operand"];
+    f1_n2 -> f1_n21;
+    f1_n21 -> f1_n22 [label="return value"];
+    f1_n22 -> f1_n23;
   }
 }

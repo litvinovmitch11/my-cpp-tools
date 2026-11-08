@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mycpptools/ast/ast_graph.hpp"
+#include "mycpptools/cfg/cfg_graph.hpp"
 
 #include <iosfwd>
 #include <string>
@@ -28,6 +29,10 @@ public:
   [[nodiscard]] bool
   writeAst(std::ostream &Output,
            const ast::FunctionAstGraphs &FunctionGraphs) const;
+
+  [[nodiscard]] bool
+  writeCfg(std::ostream &Output,
+           const cfg::FunctionCfgGraphs &FunctionGraphs) const;
 
 private:
   DotPalette Palette;

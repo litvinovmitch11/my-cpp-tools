@@ -1,0 +1,154 @@
+digraph CFG {
+  rankdir="TB";
+  bgcolor="transparent";
+  graph [fontname="Arial", fontcolor="#D4D4D4", pad="0.2", nodesep="0.25", ranksep="0.45"];
+  node [shape="box", style="rounded,filled", fontname="Arial", fontsize="10", fontcolor="#F3F4F6", color="#4B5563", margin="0.12,0.08"];
+  edge [color="#6B7280", penwidth="1.0", arrowsize="0.65", fontname="Arial", fontsize="9", fontcolor="#D4D4D4"];
+  subgraph cluster_0 {
+    label="extensionControl : int (int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f0_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f0_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f0_n2 [label="Var Target", fillcolor="#1E3A5F"];
+    f0_n3 [label="AddrLabelExpr Done", fillcolor="#1E3A5F"];
+    f0_n4 [label="BinaryOperator <", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f0_n5 [label="indirect goto", fillcolor="#4A3B16"];
+    f0_n6 [label="ImplicitCastExpr", fillcolor="#1E3A5F"];
+    f0_n7 [label="switch ImplicitCastExpr", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f0_n8 [label="after switch", shape="ellipse", style="filled", fillcolor="transparent"];
+    f0_n9 [label="case 1 ... 3", shape="ellipse", style="filled", fillcolor="transparent"];
+    f0_n10 [label="return", fillcolor="#4A3B16"];
+    f0_n11 [label="ImplicitCastExpr", fillcolor="#1E3A5F"];
+    f0_n12 [label="default", shape="ellipse", style="filled", fillcolor="transparent"];
+    f0_n13 [label="break", fillcolor="#4A3B16"];
+    f0_n14 [label="Done:", shape="ellipse", style="filled", fillcolor="transparent"];
+    f0_n15 [label="GCCAsmStmt", fillcolor="#1E3A5F"];
+    f0_n16 [label="NullStmt", fillcolor="#1E3A5F"];
+    f0_n17 [label="return", fillcolor="#4A3B16"];
+    f0_n18 [label="IntegerLiteral 0", fillcolor="#1E3A5F"];
+    f0_n3 -> f0_n2;
+    f0_n6 -> f0_n5;
+    f0_n4 -> f0_n6 [label="true"];
+    f0_n2 -> f0_n4;
+    f0_n10 -> f0_n1;
+    f0_n11 -> f0_n10;
+    f0_n9 -> f0_n11;
+    f0_n13 -> f0_n8;
+    f0_n12 -> f0_n13;
+    f0_n7 -> f0_n9 [label="case 1 ... 3"];
+    f0_n7 -> f0_n12 [label="default"];
+    f0_n4 -> f0_n7 [label="false"];
+    f0_n14 -> f0_n15;
+    f0_n8 -> f0_n14;
+    f0_n15 -> f0_n16;
+    f0_n17 -> f0_n1;
+    f0_n18 -> f0_n17;
+    f0_n16 -> f0_n18;
+    f0_n0 -> f0_n3;
+    f0_n5 -> f0_n14 [label="Done"];
+  }
+  subgraph cluster_1 {
+    label="assemblyBranch : int (_Bool)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f1_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f1_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f1_n2 [label="ImplicitCastExpr", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f1_n3 [label="asm goto", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f1_n4 [label="return", fillcolor="#4A3B16"];
+    f1_n5 [label="IntegerLiteral 0", fillcolor="#1E3A5F"];
+    f1_n6 [label="Done:", shape="ellipse", style="filled", fillcolor="transparent"];
+    f1_n7 [label="return", fillcolor="#4A3B16"];
+    f1_n8 [label="IntegerLiteral 1", fillcolor="#1E3A5F"];
+    f1_n2 -> f1_n3 [label="true"];
+    f1_n4 -> f1_n1;
+    f1_n5 -> f1_n4;
+    f1_n3 -> f1_n5 [label="fallthrough"];
+    f1_n2 -> f1_n5 [label="false"];
+    f1_n7 -> f1_n1;
+    f1_n8 -> f1_n7;
+    f1_n6 -> f1_n8;
+    f1_n0 -> f1_n2;
+    f1_n3 -> f1_n6 [label="Done"];
+  }
+  subgraph cluster_2 {
+    label="gnuConditional : int (int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f2_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f2_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f2_n2 [label="return", fillcolor="#4A3B16"];
+    f2_n3 [label="ImplicitCastExpr", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f2_n4 [label="OpaqueValueExpr", fillcolor="#1E3A5F"];
+    f2_n5 [label="CallExpr fallback", fillcolor="#1E3A5F"];
+    f2_n6 [label="ImplicitCastExpr", fillcolor="#1E3A5F"];
+    f2_n2 -> f2_n1;
+    f2_n5 -> f2_n1 [label="throws"];
+    f2_n3 -> f2_n4 [label="true"];
+    f2_n3 -> f2_n5 [label="false"];
+    f2_n6 -> f2_n3;
+    f2_n4 -> f2_n2;
+    f2_n5 -> f2_n2;
+    f2_n0 -> f2_n6;
+  }
+  subgraph cluster_3 {
+    label="compileTimeChoice : int (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f3_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f3_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f3_n2 [label="return", fillcolor="#4A3B16"];
+    f3_n3 [label="IntegerLiteral 1", fillcolor="#1E3A5F"];
+    f3_n2 -> f3_n1;
+    f3_n3 -> f3_n2;
+    f3_n0 -> f3_n3;
+  }
+  subgraph cluster_4 {
+    label="compileTimeExpressionStatement : void (void)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f4_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f4_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f4_n2 [label="IntegerLiteral 0", fillcolor="#1E3A5F"];
+    f4_n3 [label="CStyleCastExpr", fillcolor="#1E3A5F"];
+    f4_n2 -> f4_n3;
+    f4_n0 -> f4_n2;
+    f4_n3 -> f4_n1;
+  }
+  subgraph cluster_5 {
+    label="statementExpression : int (_Bool)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f5_n0 [label="Entry", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f5_n1 [label="Exit", shape="oval", style="filled", fillcolor="#1E3A5F"];
+    f5_n2 [label="return", fillcolor="#4A3B16"];
+    f5_n3 [label="Var Result", fillcolor="#1E3A5F"];
+    f5_n4 [label="IntegerLiteral 0", fillcolor="#1E3A5F"];
+    f5_n5 [label="ImplicitCastExpr", shape="diamond", style="filled", fillcolor="#1F4D3A"];
+    f5_n6 [label="BinaryOperator =", fillcolor="#1E3A5F"];
+    f5_n7 [label="ImplicitCastExpr", fillcolor="#1E3A5F"];
+    f5_n8 [label="StmtExpr", fillcolor="#1E3A5F"];
+    f5_n2 -> f5_n1;
+    f5_n4 -> f5_n3;
+    f5_n5 -> f5_n6 [label="true"];
+    f5_n3 -> f5_n5;
+    f5_n6 -> f5_n7;
+    f5_n5 -> f5_n7 [label="false"];
+    f5_n7 -> f5_n8;
+    f5_n8 -> f5_n2;
+    f5_n0 -> f5_n4;
+  }
+}

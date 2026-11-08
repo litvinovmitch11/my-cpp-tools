@@ -14,7 +14,7 @@ digraph AST {
     f0_n1 [label="ParmVar Value", fillcolor="#1E3A5F"];
     f0_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
     f0_n3 [label="ReturnStmt", fillcolor="#1F4D3A"];
-    f0_n4 [label="CallExpr", fillcolor="#4A3B16"];
+    f0_n4 [label="CallExpr helperFromHeader", fillcolor="#4A3B16"];
     f0_n5 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
     f0_n6 [label="DeclRefExpr helperFromHeader", fillcolor="#4A3B16"];
     f0_n7 [label="ImplicitCastExpr", fillcolor="#4A3B16"];

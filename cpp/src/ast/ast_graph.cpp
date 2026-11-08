@@ -132,8 +132,12 @@ std::string_view toString(AstNodeKind Kind) noexcept {
     return "unary expression";
   case AstNodeKind::ConditionalExpression:
     return "conditional expression";
+  case AstNodeKind::CompileTimeConditionalExpression:
+    return "compile-time conditional expression";
   case AstNodeKind::DeclarationReferenceExpression:
     return "declaration reference expression";
+  case AstNodeKind::AddressOfLabelExpression:
+    return "address-of-label expression";
   case AstNodeKind::MemberExpression:
     return "member expression";
   case AstNodeKind::CastExpression:
@@ -201,6 +205,8 @@ std::string_view toString(AstEdgeRole Role) noexcept {
     return "handler";
   case AstEdgeRole::CatchBody:
     return "catch body";
+  case AstEdgeRole::ExceptionDeclaration:
+    return "exception declaration";
   case AstEdgeRole::ThrownValue:
     return "thrown value";
   }
@@ -208,31 +214,13 @@ std::string_view toString(AstEdgeRole Role) noexcept {
   return "unknown AST edge";
 }
 
-FunctionId::FunctionId(std::string Value) : Value(std::move(Value)) {
-  if (this->Value.empty())
-    throw std::invalid_argument("function ID must not be empty");
-}
-
-const std::string &FunctionId::value() const noexcept { return Value; }
-
-bool operator==(const FunctionId &Left, const FunctionId &Right) noexcept {
-  return Left.Value == Right.Value;
-}
-
-bool operator!=(const FunctionId &Left, const FunctionId &Right) noexcept {
-  return !(Left == Right);
-}
-
-bool operator<(const FunctionId &Left, const FunctionId &Right) noexcept {
-  return Left.Value < Right.Value;
-}
-
-FunctionAstGraph::FunctionAstGraph(FunctionInfo Function, AstGraph Graph)
+FunctionAstGraph::FunctionAstGraph(source::FunctionInfo Function,
+                                   AstGraph Graph)
     : Function(std::move(Function)), Graph(std::move(Graph)) {
   validateAstGraph(this->Graph);
 }
 
-const FunctionInfo &FunctionAstGraph::function() const noexcept {
+const source::FunctionInfo &FunctionAstGraph::function() const noexcept {
   return Function;
 }
 

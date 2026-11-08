@@ -1,7 +1,15 @@
+int initializeFactor(int Factor);
+
 int useLocalClass(int Value) {
   class Multiplier {
   public:
-    explicit Multiplier(int Factor) : Factor(Factor) {}
+    explicit Multiplier(int Factor) try : Factor(initializeFactor(Factor)) {
+    } catch (...) {
+    }
+
+    ~Multiplier() noexcept(false) try {
+    } catch (...) {
+    }
 
     int apply(int Input) const { return Input * Factor; }
 

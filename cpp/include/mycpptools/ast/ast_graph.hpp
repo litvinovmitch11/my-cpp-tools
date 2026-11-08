@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mycpptools/graph/directed_graph.hpp"
+#include "mycpptools/source/function_info.hpp"
 
 #include <cstddef>
 #include <optional>
@@ -50,7 +51,9 @@ enum class AstNodeKind {
   BinaryExpression,
   UnaryExpression,
   ConditionalExpression,
+  CompileTimeConditionalExpression,
   DeclarationReferenceExpression,
+  AddressOfLabelExpression,
   MemberExpression,
   CastExpression,
   LiteralExpression,
@@ -84,17 +87,31 @@ enum class AstEdgeRole {
   TryBody,
   Handler,
   CatchBody,
+  ExceptionDeclaration,
   ThrownValue,
+};
+
+enum class ConstexprBranchSelection {
+  Then,
+  Else,
+  Dependent,
+};
+
+enum class FunctionKind {
+  Ordinary,
+  Constructor,
+  Destructor,
+};
+
+struct RangeForSemantics {
+  bool InitializationMayThrow = false;
+  bool ConditionMayThrow = false;
+  bool ElementMayThrow = false;
+  bool IncrementMayThrow = false;
 };
 
 [[nodiscard]] std::string_view toString(AstNodeKind Kind) noexcept;
 [[nodiscard]] std::string_view toString(AstEdgeRole Role) noexcept;
-
-struct SourceRange {
-  // Half-open byte offsets into the main source file: [BeginOffset, EndOffset).
-  std::size_t BeginOffset = 0;
-  std::size_t EndOffset = 0;
-};
 
 struct AstNodeMetadata {
   // Exact parser node name for presentation and diagnostics only. Analysis
@@ -105,7 +122,20 @@ struct AstNodeMetadata {
   std::optional<std::string> TypeName;
   std::optional<std::string> Value;
   std::optional<std::string> Operator;
-  std::optional<SourceRange> Source;
+  std::optional<std::string> TargetLabel;
+  std::vector<std::string> TargetLabels;
+  std::optional<std::string> CaseLabel;
+  std::optional<std::string> ExceptionType;
+  std::optional<ConstexprBranchSelection> ConstexprSelection;
+  std::optional<RangeForSemantics> RangeFor;
+  std::optional<source::SourceRange> Source;
+  FunctionKind FunctionCategory = FunctionKind::Ordinary;
+  bool IsAsmGoto = false;
+  bool IsCatchAll = false;
+  bool IsTransparent = false;
+  bool MayThrow = false;
+  bool DoesNotReturn = false;
+  bool ChildrenAreUnevaluated = false;
 };
 
 struct AstNodeDisplay {
@@ -127,43 +157,17 @@ using AstGraph = graph::DirectedGraph<AstNode, AstEdge>;
 using AstNodeId = AstGraph::NodeId;
 using AstEdgeId = AstGraph::EdgeId;
 
-class FunctionId {
-public:
-  // Throws std::invalid_argument when Value is empty.
-  explicit FunctionId(std::string Value);
-
-  [[nodiscard]] const std::string &value() const noexcept;
-
-  friend bool operator==(const FunctionId &Left,
-                         const FunctionId &Right) noexcept;
-  friend bool operator!=(const FunctionId &Left,
-                         const FunctionId &Right) noexcept;
-  friend bool operator<(const FunctionId &Left,
-                        const FunctionId &Right) noexcept;
-
-private:
-  std::string Value;
-};
-
-struct FunctionInfo {
-  FunctionId Id;
-  std::string Name;
-  std::string QualifiedName;
-  std::string Signature;
-  std::optional<SourceRange> Definition;
-};
-
 class FunctionAstGraph {
 public:
   // Throws std::invalid_argument unless Graph is a rooted AST tree whose root
   // is a function declaration and whose child ordinals are contiguous.
-  FunctionAstGraph(FunctionInfo Function, AstGraph Graph);
+  FunctionAstGraph(source::FunctionInfo Function, AstGraph Graph);
 
-  [[nodiscard]] const FunctionInfo &function() const noexcept;
+  [[nodiscard]] const source::FunctionInfo &function() const noexcept;
   [[nodiscard]] const AstGraph &graph() const noexcept;
 
 private:
-  FunctionInfo Function;
+  source::FunctionInfo Function;
   AstGraph Graph;
 };
 

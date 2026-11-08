@@ -4,3 +4,9 @@ int add(int Left, int Right) {
 }
 
 void doNothing() {}
+
+int linear(int Value) {
+  int Result = Value + 1;
+  Result *= 2;
+  return Result;
+}
