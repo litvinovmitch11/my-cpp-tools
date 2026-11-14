@@ -8,8 +8,9 @@ import (
 func TestLoadUsesLoopbackAddressByDefault(t *testing.T) {
 	t.Setenv("HTTP_ADDRESS", "")
 	t.Setenv("AST_PRINTER_PATH", "")
-	t.Setenv("AST_RUNNER_TIMEOUT", "")
-	t.Setenv("AST_RUNNER_MAX_CONCURRENT", "")
+	t.Setenv("CFG_PRINTER_PATH", "")
+	t.Setenv("ANALYSIS_RUNNER_TIMEOUT", "")
+	t.Setenv("ANALYSIS_RUNNER_MAX_CONCURRENT", "")
 
 	cfg, err := Load()
 	if err != nil {
@@ -21,19 +22,23 @@ func TestLoadUsesLoopbackAddressByDefault(t *testing.T) {
 	if cfg.MaxConcurrent != 2 {
 		t.Fatalf("expected default concurrency 2, got %d", cfg.MaxConcurrent)
 	}
+	if cfg.ASTPrinter != "AstPrinter" || cfg.CFGPrinter != "CfgPrinter" {
+		t.Fatalf("unexpected default printer paths: %+v", cfg)
+	}
 }
 
 func TestLoadReadsOverrides(t *testing.T) {
 	t.Setenv("HTTP_ADDRESS", "127.0.0.1:9090")
 	t.Setenv("AST_PRINTER_PATH", "/tmp/AstPrinter")
-	t.Setenv("AST_RUNNER_TIMEOUT", "3s")
-	t.Setenv("AST_RUNNER_MAX_CONCURRENT", "4")
+	t.Setenv("CFG_PRINTER_PATH", "/tmp/CfgPrinter")
+	t.Setenv("ANALYSIS_RUNNER_TIMEOUT", "3s")
+	t.Setenv("ANALYSIS_RUNNER_MAX_CONCURRENT", "4")
 
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
-	if cfg.HTTPAddress != "127.0.0.1:9090" || cfg.ASTPrinter != "/tmp/AstPrinter" {
+	if cfg.HTTPAddress != "127.0.0.1:9090" || cfg.ASTPrinter != "/tmp/AstPrinter" || cfg.CFGPrinter != "/tmp/CfgPrinter" {
 		t.Fatalf("unexpected config: %+v", cfg)
 	}
 	if cfg.RunnerTimeout != 3*time.Second || cfg.MaxConcurrent != 4 {
@@ -47,16 +52,16 @@ func TestLoadRejectsInvalidRunnerSettings(t *testing.T) {
 		env   string
 		value string
 	}{
-		{name: "invalid timeout", env: "AST_RUNNER_TIMEOUT", value: "later"},
-		{name: "zero timeout", env: "AST_RUNNER_TIMEOUT", value: "0s"},
-		{name: "invalid concurrency", env: "AST_RUNNER_MAX_CONCURRENT", value: "many"},
-		{name: "zero concurrency", env: "AST_RUNNER_MAX_CONCURRENT", value: "0"},
+		{name: "invalid timeout", env: "ANALYSIS_RUNNER_TIMEOUT", value: "later"},
+		{name: "zero timeout", env: "ANALYSIS_RUNNER_TIMEOUT", value: "0s"},
+		{name: "invalid concurrency", env: "ANALYSIS_RUNNER_MAX_CONCURRENT", value: "many"},
+		{name: "zero concurrency", env: "ANALYSIS_RUNNER_MAX_CONCURRENT", value: "0"},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Setenv("AST_RUNNER_TIMEOUT", "")
-			t.Setenv("AST_RUNNER_MAX_CONCURRENT", "")
+			t.Setenv("ANALYSIS_RUNNER_TIMEOUT", "")
+			t.Setenv("ANALYSIS_RUNNER_MAX_CONCURRENT", "")
 			t.Setenv(test.env, test.value)
 			if _, err := Load(); err == nil {
 				t.Fatal("expected configuration error")

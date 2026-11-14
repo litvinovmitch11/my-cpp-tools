@@ -1,5 +1,6 @@
 #include "mycpptools/clang/ast_graph_builder.hpp"
 #include "mycpptools/presentation/graph_dot_serializer.hpp"
+#include "mycpptools/tool/exit_code.hpp"
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
@@ -19,7 +20,7 @@ int main(int argc, const char **argv) {
       argc, argv, AstPrinterCategory);
   if (!ExpectedParser) {
     llvm::errs() << llvm::toString(ExpectedParser.takeError());
-    return 1;
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InternalError);
   }
 
   clang::tooling::CommonOptionsParser &OptionsParser = ExpectedParser.get();
@@ -27,18 +28,21 @@ int main(int argc, const char **argv) {
                                  OptionsParser.getSourcePathList());
 
   mycpptools::ast::FunctionAstGraphs FunctionGraphs;
-  const int BuildResult =
+  const mycpptools::clang_frontend::AstGraphBuildStatus BuildStatus =
       mycpptools::clang_frontend::buildFunctionAstGraphs(Tool, FunctionGraphs);
-  if (BuildResult != 0)
-    return BuildResult;
+  if (BuildStatus ==
+      mycpptools::clang_frontend::AstGraphBuildStatus::InvalidSource)
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InvalidSource);
+  if (BuildStatus != mycpptools::clang_frontend::AstGraphBuildStatus::Success)
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InternalError);
 
   const mycpptools::presentation::GraphDotSerializer Serializer;
   const bool Serialized = Serializer.writeAst(std::cout, FunctionGraphs);
   std::cout.flush();
   if (!Serialized || !std::cout) {
     llvm::errs() << "failed to write AST graph\n";
-    return 1;
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InternalError);
   }
 
-  return 0;
+  return mycpptools::tool::toInt(mycpptools::tool::ExitCode::Success);
 }

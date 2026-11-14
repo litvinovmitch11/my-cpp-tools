@@ -110,3 +110,12 @@ coverage reference.
 
 See [`docs/cfg-model.md`](../docs/cfg-model.md) for the public semantic and
 coverage reference.
+
+## Native tool process contract
+
+- `AstPrinter` and `CfgPrinter` write complete DOT only on success.
+- Exit code `0` means success, `2` means Clang rejected the submitted source,
+  and every other non-zero outcome is an internal tool or analysis failure.
+- `buildFunctionAstGraphs` distinguishes invalid source from a project AST
+  construction failure so internal invariants are never exposed as user input
+  errors by the backend.

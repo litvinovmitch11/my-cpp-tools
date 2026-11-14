@@ -14,12 +14,22 @@ import (
 	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/runner"
 )
 
+const (
+	readHeaderTimeout = 5 * time.Second
+	readTimeout       = 10 * time.Second
+	writeGracePeriod  = 5 * time.Second
+	idleTimeout       = 60 * time.Second
+)
+
 func RunServer() error {
 	cfg, err := config.Load()
 	if err != nil {
 		return err
 	}
-	astRunner, err := runner.New(cfg.ASTPrinter, runner.Options{
+	analysisRunner, err := runner.New(runner.BinaryPaths{
+		AST: cfg.ASTPrinter,
+		CFG: cfg.CFGPrinter,
+	}, runner.Options{
 		Timeout:       cfg.RunnerTimeout,
 		MaxConcurrent: cfg.MaxConcurrent,
 	})
@@ -27,14 +37,7 @@ func RunServer() error {
 		return err
 	}
 
-	server := &http.Server{
-		Addr:              cfg.HTTPAddress,
-		Handler:           api.NewRouter(astRunner),
-		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       10 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       60 * time.Second,
-	}
+	server := newHTTPServer(cfg, api.NewRouter(analysisRunner))
 
 	shutdownSignal, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -55,5 +58,16 @@ func RunServer() error {
 		shutdownContext, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		return server.Shutdown(shutdownContext)
+	}
+}
+
+func newHTTPServer(cfg config.Config, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              cfg.HTTPAddress,
+		Handler:           handler,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      readTimeout + cfg.RunnerTimeout + writeGracePeriod,
+		IdleTimeout:       idleTimeout,
 	}
 }

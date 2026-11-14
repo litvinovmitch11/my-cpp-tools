@@ -12,8 +12,10 @@ execute_process(
     TIMEOUT 15
 )
 
-if(cfg_printer_result EQUAL 0)
-    message(FATAL_ERROR "CfgPrinter accepted invalid source code")
+if(NOT cfg_printer_result EQUAL 2)
+    message(FATAL_ERROR
+        "CfgPrinter returned ${cfg_printer_result}; expected invalid-source exit code 2"
+    )
 endif()
 
 if(NOT cfg_printer_output STREQUAL "")

@@ -12,8 +12,10 @@ execute_process(
     TIMEOUT 15
 )
 
-if(ast_printer_result EQUAL 0)
-    message(FATAL_ERROR "AstPrinter accepted invalid C++ source")
+if(NOT ast_printer_result EQUAL 2)
+    message(FATAL_ERROR
+        "AstPrinter returned ${ast_printer_result}; expected invalid-source exit code 2"
+    )
 endif()
 
 if(NOT ast_printer_output STREQUAL "")

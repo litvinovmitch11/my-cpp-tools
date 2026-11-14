@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/ast"
+	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/analysis"
 )
 
 const (
@@ -20,9 +20,14 @@ const (
 )
 
 type Runner struct {
-	binaryPath string
-	timeout    time.Duration
-	slots      chan struct{}
+	paths   BinaryPaths
+	timeout time.Duration
+	slots   chan struct{}
+}
+
+type BinaryPaths struct {
+	AST string
+	CFG string
 }
 
 type Options struct {
@@ -30,37 +35,61 @@ type Options struct {
 	MaxConcurrent int
 }
 
-func New(binaryPath string, options Options) (*Runner, error) {
+func New(paths BinaryPaths, options Options) (*Runner, error) {
 	if options.Timeout <= 0 {
 		return nil, errors.New("runner timeout must be positive")
 	}
 	if options.MaxConcurrent <= 0 {
 		return nil, errors.New("runner max concurrency must be positive")
 	}
-	resolvedPath, err := exec.LookPath(binaryPath)
+	resolvedPaths, err := resolveBinaryPaths(paths)
 	if err != nil {
-		return nil, fmt.Errorf("find AST builder %q: %w", binaryPath, err)
-	}
-	absolutePath, err := filepath.Abs(resolvedPath)
-	if err != nil {
-		return nil, fmt.Errorf("resolve AST builder path: %w", err)
+		return nil, err
 	}
 	return &Runner{
-		binaryPath: absolutePath,
-		timeout:    options.Timeout,
-		slots:      make(chan struct{}, options.MaxConcurrent),
+		paths:   resolvedPaths,
+		timeout: options.Timeout,
+		slots:   make(chan struct{}, options.MaxConcurrent),
 	}, nil
 }
 
-func (r *Runner) BuildAST(ctx context.Context, source string) (string, error) {
+func resolveBinaryPaths(paths BinaryPaths) (BinaryPaths, error) {
+	astPath, err := resolveBinaryPath("AST", paths.AST)
+	if err != nil {
+		return BinaryPaths{}, err
+	}
+	cfgPath, err := resolveBinaryPath("CFG", paths.CFG)
+	if err != nil {
+		return BinaryPaths{}, err
+	}
+	return BinaryPaths{AST: astPath, CFG: cfgPath}, nil
+}
+
+func resolveBinaryPath(name, binaryPath string) (string, error) {
+	resolvedPath, err := exec.LookPath(binaryPath)
+	if err != nil {
+		return "", fmt.Errorf("find %s builder %q: %w", name, binaryPath, err)
+	}
+	absolutePath, err := filepath.Abs(resolvedPath)
+	if err != nil {
+		return "", fmt.Errorf("resolve %s builder path: %w", name, err)
+	}
+	return absolutePath, nil
+}
+
+func (r *Runner) BuildGraph(ctx context.Context, kind analysis.Kind, source string) (string, error) {
 	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	binaryPath, err := r.binaryPath(kind)
+	if err != nil {
 		return "", err
 	}
 	select {
 	case r.slots <- struct{}{}:
 		defer func() { <-r.slots }()
 	default:
-		return "", ast.ErrBusy
+		return "", analysis.ErrBusy
 	}
 
 	tempDir, err := os.MkdirTemp("", "my-cpp-tools-")
@@ -81,7 +110,7 @@ func (r *Runner) BuildAST(ctx context.Context, source string) (string, error) {
 	stderr := newLimitedBuffer(maxDiagnosticsBytes)
 	command := exec.CommandContext(
 		runCtx,
-		r.binaryPath,
+		binaryPath,
 		sourcePath,
 		"--",
 		"-std=c++20",
@@ -98,27 +127,49 @@ func (r *Runner) BuildAST(ctx context.Context, source string) (string, error) {
 
 	err = command.Run()
 	if errors.Is(runCtx.Err(), context.DeadlineExceeded) {
-		return "", ast.ErrTimeout
+		return "", analysis.ErrTimeout
 	}
 	if errors.Is(runCtx.Err(), context.Canceled) {
 		return "", runCtx.Err()
 	}
-	if stdout.truncated {
-		return "", ast.ErrOutputTooLarge
-	}
 	if err != nil {
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {
-			diagnostics := strings.ReplaceAll(stderr.String(), sourcePath, "input.cpp")
-			if stderr.truncated {
-				diagnostics += "\n[diagnostics truncated]"
+			if exitError.ExitCode() == analysis.InvalidSourceExitCode {
+				diagnostics := sanitizeDiagnostics(stderr.String(), sourcePath, tempDir)
+				if stderr.truncated {
+					diagnostics += "\n[diagnostics truncated]"
+				}
+				return "", &analysis.SourceError{Diagnostics: strings.TrimSpace(diagnostics)}
 			}
-			return "", &ast.BuildError{Diagnostics: strings.TrimSpace(diagnostics)}
+			return "", fmt.Errorf("%s analysis tool failed with exit code %d", kind, exitError.ExitCode())
 		}
-		return "", fmt.Errorf("start AST builder: %w", err)
+		return "", fmt.Errorf("start %s analysis tool: %w", kind, err)
+	}
+	if stdout.truncated {
+		return "", analysis.ErrOutputTooLarge
+	}
+	if stdout.buffer.Len() == 0 {
+		return "", fmt.Errorf("%s analysis tool returned empty output", kind)
 	}
 
 	return stdout.String(), nil
+}
+
+func sanitizeDiagnostics(diagnostics, sourcePath, tempDir string) string {
+	diagnostics = strings.ReplaceAll(diagnostics, sourcePath, "input.cpp")
+	return strings.ReplaceAll(diagnostics, tempDir, "<temporary-directory>")
+}
+
+func (r *Runner) binaryPath(kind analysis.Kind) (string, error) {
+	switch kind {
+	case analysis.AST:
+		return r.paths.AST, nil
+	case analysis.CFG:
+		return r.paths.CFG, nil
+	default:
+		return "", kind.Validate()
+	}
 }
 
 type limitedBuffer struct {

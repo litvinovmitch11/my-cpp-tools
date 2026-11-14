@@ -14,7 +14,7 @@ export default defineConfig({
     webServer: [
         {
             command:
-                "AST_PRINTER_PATH=../cpp/build/src/tools/AstPrinter/AstPrinter HTTP_ADDRESS=127.0.0.1:18080 go run ./cmd/server",
+                "AST_PRINTER_PATH=../cpp/build/src/tools/AstPrinter/AstPrinter CFG_PRINTER_PATH=../cpp/build/src/tools/CfgPrinter/CfgPrinter HTTP_ADDRESS=127.0.0.1:18080 go run ./cmd/server",
             cwd: "../backend",
             url: "http://127.0.0.1:18080/healthz",
             reuseExistingServer: false,

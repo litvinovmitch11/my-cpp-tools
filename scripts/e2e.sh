@@ -4,9 +4,18 @@ set -euo pipefail
 
 repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 export GOCACHE="${GOCACHE:-${repository_root}/.cache/go-build}"
+ast_printer="${repository_root}/cpp/build/src/tools/AstPrinter/AstPrinter"
+cfg_printer="${repository_root}/cpp/build/src/tools/CfgPrinter/CfgPrinter"
 
 cmake -S "${repository_root}/cpp" -B "${repository_root}/cpp/build"
-cmake --build "${repository_root}/cpp/build" --target AstPrinter
+cmake --build "${repository_root}/cpp/build" --target AstPrinter CfgPrinter
+
+(
+    cd "${repository_root}/backend"
+    AST_PRINTER_PATH="${ast_printer}" \
+        CFG_PRINTER_PATH="${cfg_printer}" \
+        go test ./internal/api -run Integration -count=1
+)
 
 npm --prefix "${repository_root}/web" ci
 
