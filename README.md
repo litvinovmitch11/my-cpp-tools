@@ -62,7 +62,7 @@ per-layer guarantees and their test evidence.
 
 - CMake 3.28 or newer;
 - LLVM and Clang 22 with development packages (the reference toolchain);
-- Go 1.27.3 or newer;
+- Go 1.27.4 or newer;
 - Node.js 24 or newer;
 - `make` and `rg` (ripgrep).
 
