@@ -29,21 +29,21 @@ Analysis semantics must not migrate into Go or the browser.
 
 ## Current milestone
 
-The shipped alpha path is AST end to end:
+The browser alpha path is AST end to end:
 
 ```text
 C++ source -> Go API -> AstPrinter -> DOT -> Graphviz Web Worker -> SVG
 ```
 
-The active native milestone adds the project-owned CFG foundation:
+The project-owned CFG is also exposed by the backend:
 
 ```text
-Clang AST -> FunctionAstGraphs -> FunctionCfgGraphs -> CfgPrinter -> DOT
+POST /api/v1/cfg -> bounded Go runner -> CfgPrinter -> DOT
 ```
 
-CFG is not yet exposed by Go or web. CDG remains a neutral placeholder. The
-next planned product change is a separate MR that exposes CFG through the
-backend and web without moving analysis behavior out of C++.
+CFG is exposed by Go but not yet by web. CDG remains a neutral placeholder.
+The API, process, resource, and error contracts are recorded in
+[`backend-contracts.md`](backend-contracts.md).
 
 ## Repository and dependency map
 
@@ -109,8 +109,8 @@ applies visual policy. `DotWriter` owns only DOT syntax and escaping.
 
 ## Current deliberate limits
 
-- The browser and HTTP API expose AST only.
-- CFG is native-only.
+- The browser exposes AST only; the HTTP API exposes AST and CFG.
+- CFG rendering and interaction are not yet available in the browser.
 - CDG has no model or algorithm.
 - Native parsing is bounded but not sandboxed; the service is local-only.
 - Golden graph shape targets the documented Clang major version.
@@ -141,11 +141,9 @@ dispatch unless a concrete need proves simpler local helpers insufficient.
 
 ## Planned stages
 
-1. Review and merge the native CFG foundation.
-2. Add a versioned backend CFG contract and bounded native runner path.
-3. Add an AST/CFG selector and CFG rendering to web while preserving worker
+1. Add an AST/CFG selector and CFG rendering to web while preserving worker
    isolation, sanitization, cancellation, and accessibility.
-4. Design CDG semantics, post-dominators, and control dependence from the
+2. Design CDG semantics, post-dominators, and control dependence from the
    project-owned CFG before implementation.
-5. Consider public deployment only after explicit process, filesystem, memory,
+3. Consider public deployment only after explicit process, filesystem, memory,
    CPU, and concurrency isolation is designed.

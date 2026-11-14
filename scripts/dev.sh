@@ -4,6 +4,7 @@ set -euo pipefail
 
 repository_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 ast_printer="${AST_PRINTER_PATH:-${repository_root}/cpp/build/src/tools/AstPrinter/AstPrinter}"
+cfg_printer="${CFG_PRINTER_PATH:-${repository_root}/cpp/build/src/tools/CfgPrinter/CfgPrinter}"
 export GOCACHE="${GOCACHE:-${repository_root}/.cache/go-build}"
 processes=()
 
@@ -17,11 +18,11 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 cmake -S "${repository_root}/cpp" -B "${repository_root}/cpp/build" -DCMAKE_BUILD_TYPE=Debug
-cmake --build "${repository_root}/cpp/build" --target AstPrinter --parallel
+cmake --build "${repository_root}/cpp/build" --target AstPrinter CfgPrinter --parallel
 
 (
     cd "${repository_root}/backend"
-    AST_PRINTER_PATH="${ast_printer}" go run ./cmd/server
+    AST_PRINTER_PATH="${ast_printer}" CFG_PRINTER_PATH="${cfg_printer}" go run ./cmd/server
 ) &
 processes+=("$!")
 

@@ -1,6 +1,7 @@
 #include "mycpptools/cfg/cfg_builder.hpp"
 #include "mycpptools/clang/ast_graph_builder.hpp"
 #include "mycpptools/presentation/graph_dot_serializer.hpp"
+#include "mycpptools/tool/exit_code.hpp"
 
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
@@ -22,7 +23,7 @@ int main(int argc, const char **argv) {
       argc, argv, CfgPrinterCategory);
   if (!ExpectedParser) {
     llvm::errs() << llvm::toString(ExpectedParser.takeError());
-    return 1;
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InternalError);
   }
 
   clang::tooling::CommonOptionsParser &OptionsParser = ExpectedParser.get();
@@ -30,10 +31,14 @@ int main(int argc, const char **argv) {
                                  OptionsParser.getSourcePathList());
 
   mycpptools::ast::FunctionAstGraphs AstGraphs;
-  const int AstBuildResult =
+  const mycpptools::clang_frontend::AstGraphBuildStatus AstBuildStatus =
       mycpptools::clang_frontend::buildFunctionAstGraphs(Tool, AstGraphs);
-  if (AstBuildResult != 0)
-    return AstBuildResult;
+  if (AstBuildStatus ==
+      mycpptools::clang_frontend::AstGraphBuildStatus::InvalidSource)
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InvalidSource);
+  if (AstBuildStatus !=
+      mycpptools::clang_frontend::AstGraphBuildStatus::Success)
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InternalError);
 
   mycpptools::cfg::FunctionCfgGraphsBuildResult BuildResult =
       mycpptools::cfg::buildFunctionCfgGraphs(AstGraphs);
@@ -52,7 +57,7 @@ int main(int argc, const char **argv) {
     if (Error->AstNode)
       llvm::errs() << " at AST node " << Error->AstNode->value();
     llvm::errs() << ": " << Error->Message << '\n';
-    return 1;
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InternalError);
   }
 
   const auto &CfgGraphs =
@@ -62,8 +67,8 @@ int main(int argc, const char **argv) {
   std::cout.flush();
   if (!Serialized || !std::cout) {
     llvm::errs() << "failed to write CFG graph\n";
-    return 1;
+    return mycpptools::tool::toInt(mycpptools::tool::ExitCode::InternalError);
   }
 
-  return 0;
+  return mycpptools::tool::toInt(mycpptools::tool::ExitCode::Success);
 }

@@ -127,20 +127,20 @@ private:
 
 } // namespace
 
-int buildFunctionAstGraphs(clang::tooling::ClangTool &Tool,
-                           ast::FunctionAstGraphs &Graphs) {
+AstGraphBuildStatus buildFunctionAstGraphs(clang::tooling::ClangTool &Tool,
+                                           ast::FunctionAstGraphs &Graphs) {
   AstGraphBuildState State;
   FunctionAstGraphConsumerProvider ConsumerProvider(State);
   auto ActionFactory =
       clang::tooling::newFrontendActionFactory(&ConsumerProvider);
   const int ToolResult = Tool.run(ActionFactory.get());
-  if (ToolResult != 0)
-    return ToolResult;
   if (State.Failed)
-    return 1;
+    return AstGraphBuildStatus::InternalError;
+  if (ToolResult != 0)
+    return AstGraphBuildStatus::InvalidSource;
 
   Graphs = std::move(State.Graphs);
-  return 0;
+  return AstGraphBuildStatus::Success;
 }
 
 } // namespace mycpptools::clang_frontend

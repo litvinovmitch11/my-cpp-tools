@@ -45,7 +45,8 @@ go test -race ./...
 go vet ./...
 ```
 
-Native-process integration tests require `AST_PRINTER_PATH`.
+Native-process integration tests require both `AST_PRINTER_PATH` and
+`CFG_PRINTER_PATH`.
 
 ### Web
 

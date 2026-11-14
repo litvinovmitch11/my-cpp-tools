@@ -5,24 +5,29 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"mime"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/ast"
+	"github.com/litvinovmitch11/my-cpp-tools/backend/internal/analysis"
 )
 
 const (
 	maxCodeBytes = 256 << 10
 	maxBodyBytes = 6*maxCodeBytes + (4 << 10)
+	healthPath   = "/healthz"
+	astPath      = "/api/v1/ast"
+	cfgPath      = "/api/v1/cfg"
 )
 
-type astRequest struct {
+type graphRequest struct {
 	Code string `json:"code"`
 }
 
-type astResponse struct {
+type graphResponse struct {
 	DOT string `json:"dot"`
 }
 
@@ -36,15 +41,18 @@ type apiError struct {
 	Diagnostics string `json:"diagnostics,omitempty"`
 }
 
-func NewRouter(builder ast.Builder) http.Handler {
+func NewRouter(builder analysis.Builder) http.Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
-	router.Use(middleware.Recoverer)
 	router.Use(securityHeaders)
 	router.Use(logRequests)
+	router.Use(recoverPanics)
 
-	router.Get("/healthz", health)
-	router.Post("/api/v1/ast", buildAST(builder))
+	router.Get(healthPath, health)
+	router.Post(astPath, buildGraph(analysis.AST, builder))
+	router.Post(cfgPath, buildGraph(analysis.CFG, builder))
+	router.NotFound(notFound)
+	router.MethodNotAllowed(methodNotAllowed)
 	return router
 }
 
@@ -52,18 +60,41 @@ func health(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
-func buildAST(builder ast.Builder) http.HandlerFunc {
+func notFound(w http.ResponseWriter, _ *http.Request) {
+	writeError(w, http.StatusNotFound, "not_found", "route not found", "")
+}
+
+func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
+	switch r.URL.Path {
+	case healthPath:
+		w.Header().Set("Allow", http.MethodGet)
+	case astPath, cfgPath:
+		w.Header().Set("Allow", http.MethodPost)
+	}
+	writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")
+}
+
+func buildGraph(kind analysis.Kind, builder analysis.Builder) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		if !acceptsJSONContentType(r) {
+			writeError(w, http.StatusUnsupportedMediaType, "unsupported_media_type", "Content-Type must be application/json", "")
+			return
+		}
 		r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
 		decoder := json.NewDecoder(r.Body)
 		decoder.DisallowUnknownFields()
 
-		var request astRequest
+		var request graphRequest
 		if err := decoder.Decode(&request); err != nil {
 			writeRequestError(w, err)
 			return
 		}
 		if err := ensureJSONEnd(decoder); err != nil {
+			var maxBytesError *http.MaxBytesError
+			if errors.As(err, &maxBytesError) {
+				writeRequestError(w, err)
+				return
+			}
 			writeError(w, http.StatusBadRequest, "invalid_request", "request body must contain one JSON object", "")
 			return
 		}
@@ -76,32 +107,43 @@ func buildAST(builder ast.Builder) http.HandlerFunc {
 			return
 		}
 
-		dot, err := builder.BuildAST(r.Context(), request.Code)
+		dot, err := builder.BuildGraph(r.Context(), kind, request.Code)
 		if err == nil {
-			writeJSON(w, http.StatusOK, astResponse{DOT: dot})
+			writeJSON(w, http.StatusOK, graphResponse{DOT: dot})
 			return
 		}
 
-		var buildError *ast.BuildError
+		var sourceError *analysis.SourceError
+		label := strings.ToUpper(string(kind))
 		switch {
-		case errors.As(err, &buildError):
-			writeError(w, http.StatusUnprocessableEntity, "invalid_source", "source code could not be parsed", buildError.Diagnostics)
-		case errors.Is(err, ast.ErrTimeout):
-			writeError(w, http.StatusGatewayTimeout, "builder_timeout", "AST builder timed out", "")
-		case errors.Is(err, ast.ErrOutputTooLarge):
+		case errors.As(err, &sourceError):
+			writeError(w, http.StatusUnprocessableEntity, "invalid_source", "source code could not be parsed", sourceError.Diagnostics)
+		case errors.Is(err, analysis.ErrTimeout):
+			writeError(w, http.StatusGatewayTimeout, "builder_timeout", label+" builder timed out", "")
+		case errors.Is(err, analysis.ErrOutputTooLarge):
 			writeError(w, http.StatusUnprocessableEntity, "graph_too_large", "generated graph is too large", "")
-		case errors.Is(err, ast.ErrBusy):
-			writeError(w, http.StatusServiceUnavailable, "builder_busy", "AST builder is at capacity", "")
+		case errors.Is(err, analysis.ErrBusy):
+			writeError(w, http.StatusServiceUnavailable, "builder_busy", label+" builder is at capacity", "")
 		default:
 			slog.ErrorContext(
 				r.Context(),
-				"AST graph generation failed",
+				"graph generation failed",
+				"analysis_kind", kind,
 				"error", err,
 				"request_id", middleware.GetReqID(r.Context()),
 			)
-			writeError(w, http.StatusInternalServerError, "internal_error", "AST graph could not be generated", "")
+			writeError(w, http.StatusInternalServerError, "internal_error", label+" graph could not be generated", "")
 		}
 	}
+}
+
+func acceptsJSONContentType(r *http.Request) bool {
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "" {
+		return true
+	}
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	return err == nil && mediaType == "application/json"
 }
 
 func ensureJSONEnd(decoder *json.Decoder) error {

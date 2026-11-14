@@ -17,17 +17,19 @@ C++ source
     -> sanitized interactive SVG
 ```
 
-The native layer also builds CFGs:
+The backend also exposes the native CFG pipeline:
 
 ```text
-Clang AST
+POST /api/v1/cfg
+    -> shared bounded native runner
+    -> Clang AST
     -> project-owned function AST
     -> project-owned CFG
     -> DOT
 ```
 
-CFG is not yet available through the HTTP API or web interface. CDG is a future
-stage and has no implementation yet.
+CFG is available through the HTTP API but not yet through the web interface.
+CDG is a future stage and has no implementation yet.
 
 ## Component responsibilities
 
@@ -43,9 +45,11 @@ passes, or third-party CFG/CDG builders.
 
 ### Go backend
 
-The backend exposes the versioned HTTP API, validates requests, manages a
-bounded native process, and maps failures to safe errors. It does not recreate
-AST or CFG algorithms and never compiles or executes submitted programs.
+The backend exposes separate versioned AST and CFG routes, validates requests,
+manages one shared bounded pool of native processes, and maps failures to safe
+errors. It does not recreate AST or CFG algorithms and never compiles or
+executes submitted programs. Native exit codes distinguish rejected source
+from internal analysis failures.
 
 ### Web client
 
@@ -111,7 +115,7 @@ deliberate abstractions.
 ## Deliberate limits
 
 - Analysis is currently function-local and intraprocedural.
-- CFG is native-only; the browser and API expose AST.
+- The browser exposes AST; the API exposes AST and CFG.
 - CDG is not implemented.
 - The CFG is source-oriented: it does not expand implicit destruction,
   temporary cleanup, complete exception type matching, or compiler coroutine
@@ -122,12 +126,10 @@ deliberate abstractions.
 
 ## Next stages
 
-1. Merge the native CFG foundation.
-2. Add a bounded, versioned CFG endpoint to the Go backend.
-3. Add AST/CFG selection and CFG rendering to the web client.
-4. Design and implement CDG from the project-owned CFG, including
+1. Add AST/CFG selection and CFG rendering to the web client.
+2. Design and implement CDG from the project-owned CFG, including
    post-dominators and control-dependence rules.
-5. Consider public deployment only after explicit process, filesystem, CPU,
+3. Consider public deployment only after explicit process, filesystem, CPU,
    memory, and concurrency isolation.
 
 Build, test, and local-run instructions are in the [README](../README.md).

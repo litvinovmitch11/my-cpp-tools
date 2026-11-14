@@ -5,9 +5,10 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 `my-cpp-tools` turns C++ source code into interactive program-analysis graphs.
-The alpha release provides a complete AST pipeline: edit C++ in the browser,
-send it to a local Go API, analyze it with Clang, and inspect the result as an
-interactive graph.
+The alpha release provides a complete AST browser pipeline and an AST/CFG Go
+API: edit C++ in the browser, analyze it with Clang-backed project tools, and
+inspect the AST as an interactive graph. CFG rendering in the browser is the
+next product stage.
 
 > [!WARNING]
 > The alpha backend is local-only and must not be exposed to untrusted
@@ -19,16 +20,21 @@ interactive graph.
 ## Architecture
 
 ```text
-React editor
-    │ POST /api/v1/ast
-    ▼
-Go HTTP API ── bounded native-process runner
-    │ temporary input.cpp
-    ▼
-Clang AstPrinter
-    │ DOT
-    ▼
-Graphviz Web Worker ── sanitized SVG ── interactive graph view
+React editor ── POST /api/v1/ast ──┐
+                                    ▼
+                              Go HTTP API
+                                    │ shared bounded process pool
+                         ┌──────────┴──────────┐
+                         ▼                     ▼
+                    AstPrinter            CfgPrinter
+                         │                     │
+                      AST DOT               CFG DOT
+                         │
+                         ▼
+                 Graphviz Web Worker
+                         │ sanitized SVG
+                         ▼
+                interactive AST view
 ```
 
 The monorepo has three components:
@@ -38,10 +44,10 @@ The monorepo has three components:
 - `backend/` contains the Go API, validation, process limits, and error mapping.
 - `web/` contains the React/TypeScript editor and Graphviz visualization.
 
-CFG and CDG remain outside the browser alpha scope. A native `CfgPrinter` now
-builds CFGs manually from the project-owned AST. CDG will be built manually from
-that CFG. The project does not use `clang::CFG`, LLVM analysis passes, or
-third-party CFG/CDG builders.
+CFG and CDG remain outside the browser alpha scope. The backend exposes CFG
+through `CfgPrinter`, which builds it manually from the project-owned AST. CDG
+will be built manually from that CFG. The project does not use `clang::CFG`,
+LLVM analysis passes, or third-party CFG/CDG builders.
 
 See [AST graph model and coverage](docs/ast-model.md) for the exact function
 selection rules, node and edge categories, tested constructs, and known gaps.
@@ -74,8 +80,9 @@ make bootstrap
 make dev
 ```
 
-Open `http://127.0.0.1:5173`. `make dev` builds `AstPrinter`, starts the Go API
-on `127.0.0.1:8080`, starts Vite, and stops both processes together. Use
+Open `http://127.0.0.1:5173`. `make dev` builds `AstPrinter` and `CfgPrinter`,
+starts the Go API on `127.0.0.1:8080`, starts Vite, and stops all processes
+together. Use
 <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> to build a graph.
 
 Configuration is environment-based. See [`.env.example`](.env.example) for all
@@ -154,7 +161,7 @@ browser-to-native pipeline.
 
 ## API
 
-`POST /api/v1/ast` accepts one JSON object:
+`POST /api/v1/ast` and `POST /api/v1/cfg` accept the same JSON object:
 
 ```json
 {
@@ -162,11 +169,15 @@ browser-to-native pipeline.
 }
 ```
 
-A successful response contains DOT:
+Send requests with `Content-Type: application/json`. The v1 API still accepts
+an absent content type for compatibility with the original AST client, but
+rejects an explicitly non-JSON media type.
+
+A successful response contains the requested DOT graph:
 
 ```json
 {
-  "dot": "digraph AST { ... }"
+  "dot": "digraph CFG { ... }"
 }
 ```
 
@@ -182,8 +193,10 @@ Errors use a stable envelope and may include sanitized compiler diagnostics:
 }
 ```
 
-The API limits source size, graph size, diagnostic size, execution time, and
-concurrent native processes. `GET /healthz` is the local health endpoint.
+AST and CFG share source, graph, diagnostic, execution-time, and native-process
+concurrency limits. The process runner exposes compiler diagnostics only when a
+native tool explicitly reports invalid source; internal analysis failures use a
+generic error. `GET /healthz` is the local health endpoint.
 
 ## Developer commands
 
@@ -194,7 +207,7 @@ concurrent native processes. `GET /healthz` is the local health endpoint.
 | `make lint`      | Run Go vet, clang-tidy, ESLint, and TypeScript checks                    |
 | `make test`      | Run Go race tests, CTest, and web unit tests                             |
 | `make coverage`  | Enforce Go, C++, and web coverage thresholds                             |
-| `make e2e`       | Exercise browser → API → AstPrinter → graph rendering                    |
+| `make e2e`       | Exercise both native API routes and the AST browser pipeline             |
 | `make check`     | Reproduce the non-E2E CI quality gates locally                           |
 | `make dev`       | Start the local development stack with process cleanup                   |
 
@@ -209,6 +222,7 @@ Actions:
 - repository hygiene and generated-file checks;
 - Go formatting, vet, race tests, and coverage;
 - C++ formatting, clang-tidy, build, CTest, and LLVM source coverage;
+- mandatory Go-to-native integration tests for both AST and CFG endpoints;
 - web formatting, lint, type checking, unit coverage, and production build;
 - a full Playwright end-to-end test after component jobs pass;
 - CodeQL, secret scanning, Go vulnerability checks, and npm audit.
@@ -228,7 +242,7 @@ local development environment.
 ## Roadmap
 
 - `v0.1` alpha: reliable AST pipeline, repository automation, and quality gates;
-- expose the project-owned CFG through the Go API and web client;
+- expose the backend CFG endpoint through the web client;
 - manual CDG construction from the project-owned CFG;
 - additional graph interactions and incremental analysis;
 - sandboxed packaging and deployment only after explicit isolation work.
