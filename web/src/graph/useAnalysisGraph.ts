@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AstApiError, buildAst } from "../api/ast";
+import {
+    AnalysisApiError,
+    buildAnalysisGraph,
+    type AnalysisKind,
+} from "../api/analysis";
 import { useGraphviz } from "./useGraphviz";
 
 type RequestStatus = "idle" | "building";
 
-export type AstGraphStatus =
+export type AnalysisGraphStatus =
     "initializing" | "ready" | "building" | "rendering" | "worker-error";
 
-export type AstGraphError = {
+export type AnalysisGraphError = {
     message: string;
     diagnostics?: string;
 };
 
-export function useAstGraph() {
+export function useAnalysisGraph() {
     const {
         status: graphvizStatus,
         result,
@@ -23,8 +27,9 @@ export function useAstGraph() {
         restart,
     } = useGraphviz();
     const requestRef = useRef<AbortController | null>(null);
+    const [kind, setKind] = useState<AnalysisKind>("ast");
     const [requestStatus, setRequestStatus] = useState<RequestStatus>("idle");
-    const [requestError, setRequestError] = useState<AstGraphError | null>(
+    const [requestError, setRequestError] = useState<AnalysisGraphError | null>(
         null,
     );
 
@@ -33,6 +38,19 @@ export function useAstGraph() {
             requestRef.current?.abort();
         },
         [],
+    );
+
+    const selectKind = useCallback(
+        (nextKind: AnalysisKind) => {
+            if (nextKind === kind) return;
+            requestRef.current?.abort();
+            requestRef.current = null;
+            setRequestStatus("idle");
+            setRequestError(null);
+            clear();
+            setKind(nextKind);
+        },
+        [clear, kind],
     );
 
     const build = useCallback(
@@ -45,30 +63,36 @@ export function useAstGraph() {
             clear();
 
             try {
-                const dot = await buildAst(code, request.signal);
+                const dot = await buildAnalysisGraph(
+                    kind,
+                    code,
+                    request.signal,
+                );
                 if (requestRef.current !== request) return;
                 setRequestStatus("idle");
                 render(dot);
             } catch (cause) {
                 if (request.signal.aborted) return;
                 setRequestStatus("idle");
-                setRequestError(toAstGraphError(cause));
+                setRequestError(toAnalysisGraphError(cause));
             } finally {
                 if (requestRef.current === request) {
                     requestRef.current = null;
                 }
             }
         },
-        [clear, render],
+        [clear, kind, render],
     );
 
-    let status: AstGraphStatus = "ready";
+    let status: AnalysisGraphStatus = "ready";
     if (graphvizStatus === "loading") status = "initializing";
     else if (graphvizStatus === "error") status = "worker-error";
     else if (requestStatus === "building") status = "building";
     else if (isRendering) status = "rendering";
 
     return {
+        kind,
+        selectKind,
         status,
         result,
         error:
@@ -78,8 +102,8 @@ export function useAstGraph() {
     };
 }
 
-function toAstGraphError(cause: unknown): AstGraphError {
-    if (cause instanceof AstApiError) {
+function toAnalysisGraphError(cause: unknown): AnalysisGraphError {
+    if (cause instanceof AnalysisApiError) {
         return {
             message: cause.message,
             diagnostics: cause.diagnostics,

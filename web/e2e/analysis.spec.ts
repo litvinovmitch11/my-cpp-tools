@@ -1,17 +1,18 @@
 import { expect, test, type Page } from "@playwright/test";
 import { resolve } from "node:path";
 
-test("builds and renders an AST for the editor source", async ({ page }) => {
+test("builds and renders an AST by default", async ({ page }) => {
     await page.goto("/");
     await setEditorCode(
         page,
         "int alpha_pipeline(int value) { return value + 42; }",
     );
 
+    await expect(page.getByRole("radio", { name: "AST" })).toBeChecked();
     await expect(page.getByRole("button", { name: "Build AST" })).toBeEnabled();
     await page.keyboard.press("Control+Enter");
 
-    const graph = page.getByTestId("ast-graph");
+    const graph = page.getByTestId("analysis-graph");
     await expect(graph).toContainText("alpha_pipeline");
     const svg = graph.locator("svg");
     await expect(svg).toBeVisible();
@@ -74,19 +75,58 @@ test("builds and renders an AST for the editor source", async ({ page }) => {
     ).toBe(true);
 });
 
-test("shows compiler diagnostics for invalid C++", async ({ page }) => {
+test("switches from AST to CFG without retaining the old graph", async ({
+    page,
+}) => {
     await page.goto("/");
-    await setEditorCode(page, "int broken(");
+    await setEditorCode(
+        page,
+        "int choose(int value) { if (value > 0) return 1; return 0; }",
+    );
 
-    const buildButton = page.getByRole("button", { name: "Build AST" });
-    await expect(buildButton).toBeEnabled();
-    await buildButton.click();
+    await page.getByRole("button", { name: "Build AST" }).click();
+    const graph = page.getByTestId("analysis-graph");
+    await expect(graph).toContainText("IfStmt");
 
-    const error = page.getByTestId("ast-error");
-    await expect(error).toContainText("source code could not be parsed");
-    await expect(error).toContainText("input.cpp");
-    await expect(buildButton).toBeEnabled();
+    await page.getByRole("radio", { name: "CFG" }).check();
+    await expect(page.getByText("CFG graph")).toBeVisible();
+    await expect(
+        page.getByText("Enter C++ code and select Build CFG"),
+    ).toBeVisible();
+    await expect(graph).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Build CFG" }).click();
+    const cfgGraph = page.getByTestId("analysis-graph");
+    await expect(cfgGraph).toContainText("choose");
+    await expect(cfgGraph).toContainText("Entry");
+    await expect(cfgGraph).toContainText("Exit");
+    await expect(cfgGraph).toContainText("true");
+    await expect(cfgGraph).toContainText("false");
+    await expect(cfgGraph).not.toContainText("IfStmt");
 });
+
+for (const kind of ["AST", "CFG"] as const) {
+    test(`shows compiler diagnostics for invalid ${kind} source`, async ({
+        page,
+    }) => {
+        await page.goto("/");
+        if (kind === "CFG") {
+            await page.getByRole("radio", { name: kind }).check();
+        }
+        await setEditorCode(page, "int broken(");
+
+        const buildButton = page.getByRole("button", {
+            name: `Build ${kind}`,
+        });
+        await expect(buildButton).toBeEnabled();
+        await buildButton.click();
+
+        const error = page.getByTestId("analysis-error");
+        await expect(error).toContainText("source code could not be parsed");
+        await expect(error).toContainText("input.cpp");
+        await expect(buildButton).toBeEnabled();
+    });
+}
 
 test("supports editor font size and word navigation", async ({ page }) => {
     await page.goto("/");

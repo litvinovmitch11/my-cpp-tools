@@ -15,7 +15,7 @@ export default defineConfig({
                 "src/api/**/*.ts",
                 "src/graph/GraphView.tsx",
                 "src/graph/svg-sanitize.ts",
-                "src/graph/useAstGraph.ts",
+                "src/graph/useAnalysisGraph.ts",
             ],
             thresholds: {
                 lines: 70,

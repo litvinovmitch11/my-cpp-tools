@@ -5,7 +5,9 @@ import { App } from "../src/App";
 const mocks = vi.hoisted(() => ({
     build: vi.fn(),
     restart: vi.fn(),
+    selectKind: vi.fn(),
     state: {
+        kind: "ast" as "ast" | "cfg",
         status: "ready" as
             | "initializing"
             | "ready"
@@ -42,19 +44,45 @@ vi.mock("../src/graph/GraphView", () => ({
     ),
 }));
 
-vi.mock("../src/graph/useAstGraph", () => ({
-    useAstGraph: () => ({
+vi.mock("../src/graph/useAnalysisGraph", () => ({
+    useAnalysisGraph: () => ({
         ...mocks.state,
         build: mocks.build,
         restart: mocks.restart,
+        selectKind: mocks.selectKind,
     }),
 }));
 
 describe("App", () => {
     beforeEach(() => {
+        vi.clearAllMocks();
+        mocks.state.kind = "ast";
         mocks.state.status = "ready";
         mocks.state.result = null;
         mocks.state.error = null;
+    });
+
+    it("selects AST by default and lets the user choose CFG", () => {
+        render(<App />);
+
+        expect(
+            (screen.getByRole("radio", { name: "AST" }) as HTMLInputElement)
+                .checked,
+        ).toBe(true);
+        fireEvent.click(screen.getByRole("radio", { name: "CFG" }));
+        expect(mocks.selectKind).toHaveBeenCalledWith("cfg");
+        expect(mocks.build).not.toHaveBeenCalled();
+    });
+
+    it("uses CFG labels for the selected analysis", () => {
+        mocks.state.kind = "cfg";
+        render(<App />);
+
+        expect(screen.getByRole("button", { name: "Build CFG" })).toBeTruthy();
+        expect(screen.getByText("CFG graph")).toBeTruthy();
+        expect(
+            screen.getByText("Enter C++ code and select Build CFG"),
+        ).toBeTruthy();
     });
 
     it("builds the edited source from the button and keyboard shortcut", () => {
@@ -94,6 +122,13 @@ describe("App", () => {
 
         const button = screen.getByRole("button", { name: label });
         expect((button as HTMLButtonElement).disabled).toBe(true);
+        expect(
+            (
+                screen.getByRole("group", {
+                    name: "Analysis",
+                }) as HTMLFieldSetElement
+            ).disabled,
+        ).toBe(true);
         fireEvent.keyDown(window, { key: "Enter", metaKey: true });
         expect(mocks.build).not.toHaveBeenCalled();
     });

@@ -1,4 +1,8 @@
-export type AstApiErrorBody = {
+export const analysisKinds = ["ast", "cfg"] as const;
+
+export type AnalysisKind = (typeof analysisKinds)[number];
+
+export type AnalysisApiErrorBody = {
     error: {
         code: string;
         message: string;
@@ -6,11 +10,16 @@ export type AstApiErrorBody = {
     };
 };
 
-type AstResponse = {
+type GraphResponse = {
     dot: string;
 };
 
-export class AstApiError extends Error {
+const analysisPaths: Record<AnalysisKind, string> = {
+    ast: "/api/v1/ast",
+    cfg: "/api/v1/cfg",
+};
+
+export class AnalysisApiError extends Error {
     readonly status: number;
     readonly code: string;
     readonly diagnostics?: string;
@@ -22,18 +31,19 @@ export class AstApiError extends Error {
         diagnostics?: string,
     ) {
         super(message);
-        this.name = "AstApiError";
+        this.name = "AnalysisApiError";
         this.status = status;
         this.code = code;
         this.diagnostics = diagnostics;
     }
 }
 
-export async function buildAst(
+export async function buildAnalysisGraph(
+    kind: AnalysisKind,
     code: string,
     signal?: AbortSignal,
 ): Promise<string> {
-    const response = await fetch("/api/v1/ast", {
+    const response = await fetch(analysisPaths[kind], {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
@@ -43,31 +53,31 @@ export async function buildAst(
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
         if (isErrorBody(payload)) {
-            throw new AstApiError(
+            throw new AnalysisApiError(
                 response.status,
                 payload.error.code,
                 payload.error.message,
                 payload.error.diagnostics,
             );
         }
-        throw new AstApiError(
+        throw new AnalysisApiError(
             response.status,
             "invalid_response",
             "Backend returned an invalid error response",
         );
     }
 
-    if (!isAstResponse(payload)) {
-        throw new AstApiError(
+    if (!isGraphResponse(payload)) {
+        throw new AnalysisApiError(
             response.status,
             "invalid_response",
-            "Backend returned an invalid AST response",
+            "Backend returned an invalid graph response",
         );
     }
     return payload.dot;
 }
 
-function isAstResponse(value: unknown): value is AstResponse {
+function isGraphResponse(value: unknown): value is GraphResponse {
     return (
         typeof value === "object" &&
         value !== null &&
@@ -76,7 +86,7 @@ function isAstResponse(value: unknown): value is AstResponse {
     );
 }
 
-function isErrorBody(value: unknown): value is AstApiErrorBody {
+function isErrorBody(value: unknown): value is AnalysisApiErrorBody {
     if (
         typeof value !== "object" ||
         value === null ||

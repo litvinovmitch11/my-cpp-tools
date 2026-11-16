@@ -101,4 +101,5 @@ The backend CFG MR is complete only when:
 7. CI builds both tools and makes those integration tests mandatory;
 8. environment examples, development scripts, README, and architecture docs
    describe the new backend capability;
-9. the web application remains AST-only until its separate milestone.
+9. web support is added as a separate milestone without changing this backend
+   contract.

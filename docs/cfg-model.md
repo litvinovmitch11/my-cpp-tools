@@ -1,8 +1,7 @@
 # CFG graph model and coverage
 
 This document describes the project-owned control-flow graph produced by
-`CfgPrinter`. The browser and Go API still expose only AST graphs; the CFG is
-the native foundation for the next product stage.
+`CfgPrinter` and exposed through both the Go API and browser analysis selector.
 
 The explicit Supported, Abstracted, and Not implemented matrix is documented
 in [Analysis support and guarantees](analysis-support.md).
