@@ -231,7 +231,7 @@ these examples:
 | `control_flow` | `if`, classic `for`, `while`, `do`, `switch`, `case`, `default`, `break`, and `continue` |
 | `coroutines` | coroutine body materialization, `co_await`, `co_yield`, and `co_return` |
 | `empty` | a valid translation unit with no collected function |
-| `expressions` | unary, binary, conditional, cast, pointer, subscript, unevaluated, and assignment expressions |
+| `expressions` | unary, binary, conditional, cast, pointer, subscript, unevaluated, assignment, and transparent parenthesized expressions |
 | `function_definitions` | defaulted and deleted special members, destructor, overloaded call operator, explicit specialization, and exclusion of an implicit template instantiation |
 | `lambdas` | captures, throwing capture initializers, lambda body ownership, parameters, and invocation |
 | `literals_and_escaping` | string and character literals plus safe DOT escaping |

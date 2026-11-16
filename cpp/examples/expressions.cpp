@@ -24,3 +24,9 @@ bool assignmentCondition() {
     return true;
   return false;
 }
+
+int parenthesizedExpressions(int Value) {
+  if (((Value > 2)))
+    return (Value / 42);
+  return Value + 1;
+}

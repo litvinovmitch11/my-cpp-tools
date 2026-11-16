@@ -228,4 +228,52 @@ digraph AST {
     f4_n1 -> f4_n17;
     f4_n17 -> f4_n18 [label="return value"];
   }
+  subgraph cluster_5 {
+    label="parenthesizedExpressions : int (int)";
+    color="#4B5563";
+    fontcolor="#D4D4D4";
+    style="rounded";
+    margin="12";
+    f5_n0 [label="Function parenthesizedExpressions", fillcolor="#1E3A5F"];
+    f5_n1 [label="ParmVar Value", fillcolor="#1E3A5F"];
+    f5_n2 [label="CompoundStmt", fillcolor="#1F4D3A"];
+    f5_n3 [label="IfStmt", fillcolor="#1F4D3A"];
+    f5_n4 [label="ParenExpr", fillcolor="#4A3B16"];
+    f5_n5 [label="ParenExpr", fillcolor="#4A3B16"];
+    f5_n6 [label="BinaryOperator >", fillcolor="#4A3B16"];
+    f5_n7 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f5_n8 [label="DeclRefExpr Value", fillcolor="#4A3B16"];
+    f5_n9 [label="IntegerLiteral 2", fillcolor="#4A3B16"];
+    f5_n10 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f5_n11 [label="ParenExpr", fillcolor="#4A3B16"];
+    f5_n12 [label="BinaryOperator /", fillcolor="#4A3B16"];
+    f5_n13 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f5_n14 [label="DeclRefExpr Value", fillcolor="#4A3B16"];
+    f5_n15 [label="IntegerLiteral 42", fillcolor="#4A3B16"];
+    f5_n16 [label="ReturnStmt", fillcolor="#1F4D3A"];
+    f5_n17 [label="BinaryOperator +", fillcolor="#4A3B16"];
+    f5_n18 [label="ImplicitCastExpr", fillcolor="#4A3B16"];
+    f5_n19 [label="DeclRefExpr Value", fillcolor="#4A3B16"];
+    f5_n20 [label="IntegerLiteral 1", fillcolor="#4A3B16"];
+    f5_n0 -> f5_n1 [label="parameter"];
+    f5_n0 -> f5_n2 [label="body"];
+    f5_n2 -> f5_n3;
+    f5_n3 -> f5_n4 [label="condition"];
+    f5_n4 -> f5_n5;
+    f5_n5 -> f5_n6;
+    f5_n6 -> f5_n7 [label="left operand"];
+    f5_n7 -> f5_n8;
+    f5_n6 -> f5_n9 [label="right operand"];
+    f5_n3 -> f5_n10 [label="then"];
+    f5_n10 -> f5_n11 [label="return value"];
+    f5_n11 -> f5_n12;
+    f5_n12 -> f5_n13 [label="left operand"];
+    f5_n13 -> f5_n14;
+    f5_n12 -> f5_n15 [label="right operand"];
+    f5_n2 -> f5_n16;
+    f5_n16 -> f5_n17 [label="return value"];
+    f5_n17 -> f5_n18 [label="left operand"];
+    f5_n18 -> f5_n19;
+    f5_n17 -> f5_n20 [label="right operand"];
+  }
 }

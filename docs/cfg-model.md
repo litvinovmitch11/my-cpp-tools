@@ -75,6 +75,9 @@ edges with a dashed muted style.
   rethrows the active exception.
 - A variable initializer executes before its declaration operation.
 - `return` and `co_return` evaluate their value before transferring to `Exit`.
+- Control-flow-transparent expression wrappers, including source parentheses
+  and non-executable compiler cleanup wrappers, do not create CFG nodes; their
+  single expression child carries the operation or condition.
 - A direct call to a function declared `[[noreturn]]` has no normal successor.
 - `break`, `continue`, direct `goto`, source labels, switch fallthrough, and
   nested loop/switch targets are resolved explicitly.
