@@ -380,6 +380,18 @@ private:
     }
   }
 
+  [[nodiscard]] ast::AstNodeId
+  transparentExpressionChild(ast::AstNodeId Node) const {
+    const std::vector<ast::AstNodeId> Contents = children(Node);
+    if (Contents.size() != 1)
+      fail(CfgBuildErrorCode::InvalidAst, Node,
+           "transparent expression must have exactly one child");
+    if (!isExpression(Ast.node(Contents.front()).Payload.Kind))
+      fail(CfgBuildErrorCode::InvalidAst, Node,
+           "transparent expression child is not an expression");
+    return Contents.front();
+  }
+
   [[nodiscard]] FlowFragment buildVariable(ast::AstNodeId Node) {
     const CfgNodeId Declaration = addAstNode(
         CfgNodeKind::Operation, Node, Ast.node(Node).Payload.Display.Label);
@@ -807,6 +819,8 @@ private:
           CfgNodeKind::Condition, Node, Ast.node(Node).Payload.Display.Label);
       return ConditionFragment{Condition, {Condition}, {Condition}};
     }
+    if (Payload.Metadata.IsTransparent)
+      return buildCondition(transparentExpressionChild(Node));
 
     if (Payload.Kind == ast::AstNodeKind::BinaryExpression &&
         Payload.Metadata.Operator) {
@@ -900,8 +914,7 @@ private:
         ControlChildren.push_back(Child);
     }
     if (ControlChildren.size() == 1) {
-      if (Payload.Kind == ast::AstNodeKind::CastExpression ||
-          Payload.Metadata.IsTransparent)
+      if (Payload.Kind == ast::AstNodeKind::CastExpression)
         return buildCondition(ControlChildren.front());
 
       return buildAtomicCondition(Node, ControlChildren);
@@ -1141,6 +1154,8 @@ private:
       return buildLambda(Node);
     if (Payload.Metadata.ChildrenAreUnevaluated)
       return makeOperation(Node);
+    if (Payload.Metadata.IsTransparent)
+      return buildExpression(transparentExpressionChild(Node));
 
     if (Payload.Kind == ast::AstNodeKind::ThrowExpression)
       return buildThrow(Node);

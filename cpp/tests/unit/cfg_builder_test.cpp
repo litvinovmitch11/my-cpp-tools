@@ -103,6 +103,99 @@ static void buildsShortCircuitReturn() {
   MYCPPTOOLS_EXPECT_EQ(FalseEdges, std::size_t(2));
 }
 
+static void unwrapsTransparentExpressionsInValuesAndConditions() {
+  AstFixture Fixture;
+  const ast::AstNodeId Body =
+      Fixture.add(ast::AstNodeKind::CompoundStatement, "CompoundStmt");
+  const ast::AstNodeId If =
+      Fixture.add(ast::AstNodeKind::IfStatement, "IfStmt");
+  ast::AstNodeMetadata TransparentMetadata;
+  TransparentMetadata.IsTransparent = true;
+  const ast::AstNodeId ConditionWrapper = Fixture.add(
+      ast::AstNodeKind::OtherExpression, "ParenExpr", TransparentMetadata);
+  ast::AstNodeMetadata ComparisonMetadata;
+  ComparisonMetadata.Operator = ">";
+  const ast::AstNodeId Comparison =
+      Fixture.add(ast::AstNodeKind::BinaryExpression, "BinaryOperator >",
+                  ComparisonMetadata);
+  const ast::AstNodeId ComparisonLeft = Fixture.add(
+      ast::AstNodeKind::DeclarationReferenceExpression, "condition left");
+  const ast::AstNodeId ComparisonRight =
+      Fixture.add(ast::AstNodeKind::LiteralExpression, "condition right");
+  const ast::AstNodeId ThenReturn =
+      Fixture.add(ast::AstNodeKind::ReturnStatement, "then return");
+  const ast::AstNodeId ValueWrapper = Fixture.add(
+      ast::AstNodeKind::OtherExpression, "ParenExpr", TransparentMetadata);
+  ast::AstNodeMetadata DivisionMetadata;
+  DivisionMetadata.Operator = "/";
+  const ast::AstNodeId Division = Fixture.add(
+      ast::AstNodeKind::BinaryExpression, "BinaryOperator /", DivisionMetadata);
+  const ast::AstNodeId DivisionLeft = Fixture.add(
+      ast::AstNodeKind::DeclarationReferenceExpression, "value left");
+  const ast::AstNodeId DivisionRight =
+      Fixture.add(ast::AstNodeKind::LiteralExpression, "value right");
+
+  Fixture.attach(Fixture.root(), Body, ast::AstEdgeRole::Body);
+  Fixture.attach(Body, If);
+  Fixture.attach(If, ConditionWrapper, ast::AstEdgeRole::Condition);
+  Fixture.attach(If, ThenReturn, ast::AstEdgeRole::ThenBranch);
+  Fixture.attach(ConditionWrapper, Comparison);
+  Fixture.attach(Comparison, ComparisonLeft, ast::AstEdgeRole::LeftOperand);
+  Fixture.attach(Comparison, ComparisonRight, ast::AstEdgeRole::RightOperand);
+  Fixture.attach(ThenReturn, ValueWrapper, ast::AstEdgeRole::ReturnValue);
+  Fixture.attach(ValueWrapper, Division);
+  Fixture.attach(Division, DivisionLeft, ast::AstEdgeRole::LeftOperand);
+  Fixture.attach(Division, DivisionRight, ast::AstEdgeRole::RightOperand);
+
+  ast::FunctionAstGraph AstGraph = Fixture.finish();
+  cfg::FunctionCfgBuildResult Result = cfg::buildFunctionCfgGraph(AstGraph);
+  const cfg::FunctionCfgGraph &Cfg = expectGraph(Result);
+
+  bool FoundComparisonCondition = false;
+  bool FoundDivisionOperation = false;
+  bool FoundTransparentWrapper = false;
+  for (const cfg::CfgGraph::Node &Node : Cfg.graph().nodes()) {
+    FoundComparisonCondition =
+        FoundComparisonCondition ||
+        (Node.Payload.Kind == cfg::CfgNodeKind::Condition &&
+         Node.Payload.Metadata.AstOrigin == Comparison);
+    FoundDivisionOperation =
+        FoundDivisionOperation ||
+        (Node.Payload.Kind == cfg::CfgNodeKind::Operation &&
+         Node.Payload.Metadata.AstOrigin == Division);
+    FoundTransparentWrapper =
+        FoundTransparentWrapper ||
+        Node.Payload.Metadata.AstOrigin == ConditionWrapper ||
+        Node.Payload.Metadata.AstOrigin == ValueWrapper;
+  }
+  MYCPPTOOLS_EXPECT_TRUE(FoundComparisonCondition);
+  MYCPPTOOLS_EXPECT_TRUE(FoundDivisionOperation);
+  MYCPPTOOLS_EXPECT_TRUE(!FoundTransparentWrapper);
+}
+
+static void rejectsMalformedTransparentExpression() {
+  AstFixture Fixture;
+  const ast::AstNodeId Body =
+      Fixture.add(ast::AstNodeKind::CompoundStatement, "CompoundStmt");
+  const ast::AstNodeId Return =
+      Fixture.add(ast::AstNodeKind::ReturnStatement, "return");
+  ast::AstNodeMetadata TransparentMetadata;
+  TransparentMetadata.IsTransparent = true;
+  const ast::AstNodeId Wrapper = Fixture.add(ast::AstNodeKind::OtherExpression,
+                                             "ParenExpr", TransparentMetadata);
+  Fixture.attach(Fixture.root(), Body, ast::AstEdgeRole::Body);
+  Fixture.attach(Body, Return);
+  Fixture.attach(Return, Wrapper, ast::AstEdgeRole::ReturnValue);
+
+  ast::FunctionAstGraph AstGraph = Fixture.finish();
+  cfg::FunctionCfgBuildResult Result = cfg::buildFunctionCfgGraph(AstGraph);
+
+  MYCPPTOOLS_EXPECT_TRUE(std::holds_alternative<cfg::CfgBuildError>(Result));
+  const cfg::CfgBuildError &Error = std::get<cfg::CfgBuildError>(Result);
+  MYCPPTOOLS_EXPECT_EQ(Error.Code, cfg::CfgBuildErrorCode::InvalidAst);
+  MYCPPTOOLS_EXPECT_EQ(Error.AstNode, std::optional<ast::AstNodeId>(Wrapper));
+}
+
 static void resolvesGotoAndKeepsUnreachableCode() {
   AstFixture Fixture;
   const ast::AstNodeId Body =
@@ -474,6 +567,10 @@ static void routesRangeProtocolExceptionsToHandler() {
 int main() {
   return mycpptools::test::runTests({
       {"builds a short-circuit return", buildsShortCircuitReturn},
+      {"unwraps transparent expressions in values and conditions",
+       unwrapsTransparentExpressionsInValuesAndConditions},
+      {"rejects a malformed transparent expression",
+       rejectsMalformedTransparentExpression},
       {"resolves goto and keeps unreachable code",
        resolvesGotoAndKeepsUnreachableCode},
       {"reports an invalid AST transactionally",
