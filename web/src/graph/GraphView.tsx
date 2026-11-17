@@ -45,7 +45,7 @@ export function GraphView({ result, emptyMessage }: Props) {
     }
 
     return (
-        <div className="graph-view" data-testid="ast-graph">
+        <div className="graph-view" data-testid="analysis-graph">
             <div
                 className="graph-controls"
                 aria-label="Graph zoom"

@@ -22,7 +22,7 @@ export default defineConfig({
         },
         {
             command:
-                "AST_API_TARGET=http://127.0.0.1:18080 npm run dev -- --port 15173",
+                "ANALYSIS_API_TARGET=http://127.0.0.1:18080 npm run dev -- --port 15173",
             url: "http://127.0.0.1:15173",
             reuseExistingServer: false,
             timeout: 120_000,

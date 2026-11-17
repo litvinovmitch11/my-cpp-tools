@@ -6,13 +6,14 @@ and browser presentation so each concern can evolve and be tested separately.
 
 ## System overview
 
-The browser currently exposes the AST pipeline:
+The browser exposes both analysis pipelines through one selector and rendering
+path:
 
 ```text
-C++ source
-    -> Go API
-    -> Clang-based AstPrinter
-    -> DOT
+C++ source + AST/CFG selection
+    -> versioned Go API route
+    -> AstPrinter or CfgPrinter
+    -> AST or CFG DOT
     -> Graphviz Web Worker
     -> sanitized interactive SVG
 ```
@@ -28,7 +29,6 @@ POST /api/v1/cfg
     -> DOT
 ```
 
-CFG is available through the HTTP API but not yet through the web interface.
 CDG is a future stage and has no implementation yet.
 
 ## Component responsibilities
@@ -53,9 +53,9 @@ from internal analysis failures.
 
 ### Web client
 
-The browser provides the editor and graph interaction. Graphviz runs in a Web
-Worker, and generated SVG is sanitized before display. The client owns
-presentation and interaction, not analysis meaning.
+The browser provides the editor, AST/CFG selection, and graph interaction.
+Graphviz runs in a Web Worker, and generated SVG is sanitized before display.
+The client owns presentation and interaction, not analysis meaning.
 
 ## Native module layout
 
@@ -115,7 +115,7 @@ deliberate abstractions.
 ## Deliberate limits
 
 - Analysis is currently function-local and intraprocedural.
-- The browser exposes AST; the API exposes AST and CFG.
+- The browser and API expose AST and CFG.
 - CDG is not implemented.
 - The CFG is source-oriented: it does not expand implicit destruction,
   temporary cleanup, complete exception type matching, or compiler coroutine
@@ -126,10 +126,9 @@ deliberate abstractions.
 
 ## Next stages
 
-1. Add AST/CFG selection and CFG rendering to the web client.
-2. Design and implement CDG from the project-owned CFG, including
+1. Design and implement CDG from the project-owned CFG, including
    post-dominators and control-dependence rules.
-3. Consider public deployment only after explicit process, filesystem, CPU,
+2. Consider public deployment only after explicit process, filesystem, CPU,
    memory, and concurrency isolation.
 
 Build, test, and local-run instructions are in the [README](../README.md).

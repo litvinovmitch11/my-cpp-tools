@@ -5,36 +5,29 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 `my-cpp-tools` turns C++ source code into interactive program-analysis graphs.
-The alpha release provides a complete AST browser pipeline and an AST/CFG Go
-API: edit C++ in the browser, analyze it with Clang-backed project tools, and
-inspect the AST as an interactive graph. CFG rendering in the browser is the
-next product stage.
+The alpha release provides complete AST and CFG browser pipelines: edit C++,
+select an analysis, run the Clang-backed project tools through the local Go API,
+and inspect the result as an interactive graph.
 
 > [!WARNING]
 > The alpha backend is local-only and must not be exposed to untrusted
 > networks. Clang runs as a native process and is not isolated by a container
 > or OS sandbox.
 
-![AST viewer with a C++ editor and interactive graph](docs/assets/ast-viewer.png)
+![Analysis viewer with a C++ editor and interactive graph](docs/assets/ast-viewer.png)
 
 ## Architecture
 
 ```text
-React editor ── POST /api/v1/ast ──┐
-                                    ▼
-                              Go HTTP API
-                                    │ shared bounded process pool
-                         ┌──────────┴──────────┐
-                         ▼                     ▼
-                    AstPrinter            CfgPrinter
-                         │                     │
-                      AST DOT               CFG DOT
-                         │
-                         ▼
-                 Graphviz Web Worker
-                         │ sanitized SVG
-                         ▼
-                interactive AST view
+React editor + AST/CFG selector
+              │
+              ├── POST /api/v1/ast ── AstPrinter ── AST DOT ──┐
+              └── POST /api/v1/cfg ── CfgPrinter ── CFG DOT ──┤
+                                                              ▼
+                                                      Graphviz Web Worker
+                                                              │ sanitized SVG
+                                                              ▼
+                                                   interactive graph view
 ```
 
 The monorepo has three components:
@@ -44,10 +37,10 @@ The monorepo has three components:
 - `backend/` contains the Go API, validation, process limits, and error mapping.
 - `web/` contains the React/TypeScript editor and Graphviz visualization.
 
-CFG and CDG remain outside the browser alpha scope. The backend exposes CFG
-through `CfgPrinter`, which builds it manually from the project-owned AST. CDG
-will be built manually from that CFG. The project does not use `clang::CFG`,
-LLVM analysis passes, or third-party CFG/CDG builders.
+The browser exposes AST and CFG. `CfgPrinter` builds CFG manually from the
+project-owned AST. CDG remains outside the browser alpha scope and will be built
+manually from that CFG. The project does not use `clang::CFG`, LLVM analysis
+passes, or third-party CFG/CDG builders.
 
 See [AST graph model and coverage](docs/ast-model.md) for the exact function
 selection rules, node and edge categories, tested constructs, and known gaps.
@@ -207,7 +200,7 @@ generic error. `GET /healthz` is the local health endpoint.
 | `make lint`      | Run Go vet, clang-tidy, ESLint, and TypeScript checks                    |
 | `make test`      | Run Go race tests, CTest, and web unit tests                             |
 | `make coverage`  | Enforce Go, C++, and web coverage thresholds                             |
-| `make e2e`       | Exercise both native API routes and the AST browser pipeline             |
+| `make e2e`       | Exercise both native API routes and the AST/CFG browser pipelines         |
 | `make check`     | Reproduce the non-E2E CI quality gates locally                           |
 | `make dev`       | Start the local development stack with process cleanup                   |
 

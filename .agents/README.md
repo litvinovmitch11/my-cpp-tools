@@ -21,7 +21,9 @@ For every task:
    supported analysis claim or its evidence.
 6. Read [`backend-contracts.md`](backend-contracts.md) before changing the Go
    API, native-process orchestration, or the C++/Go process boundary.
-7. Inspect `git status`, the current branch diff, relevant public headers,
+7. Read [`web-contracts.md`](web-contracts.md) before changing browser API
+   access, graph state, rendering, interaction, or accessibility.
+8. Inspect `git status`, the current branch diff, relevant public headers,
    target links, and focused tests. Documentation records contracts; source and
    tests record the current implementation.
 
@@ -36,6 +38,8 @@ For every task:
   each status.
 - `backend-contracts.md` records the stable API, process, error, resource, and
   current backend-milestone contracts.
+- `web-contracts.md` records browser ownership, analysis selection, request,
+  rendering, sanitization, stale-result, and accessibility contracts.
 - `README.md` and `docs/` are written for people using or reviewing the
   project. Keep them concise and explanatory rather than agent-operational.
 

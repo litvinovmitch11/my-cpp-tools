@@ -29,10 +29,16 @@ Analysis semantics must not migrate into Go or the browser.
 
 ## Current milestone
 
-The browser alpha path is AST end to end:
+The browser exposes AST and CFG through one analysis selector and rendering
+pipeline:
 
 ```text
-C++ source -> Go API -> AstPrinter -> DOT -> Graphviz Web Worker -> SVG
+C++ source + AST/CFG selection
+    -> Go API
+    -> AstPrinter or CfgPrinter
+    -> DOT
+    -> Graphviz Web Worker
+    -> sanitized SVG
 ```
 
 The project-owned CFG is also exposed by the backend:
@@ -41,9 +47,10 @@ The project-owned CFG is also exposed by the backend:
 POST /api/v1/cfg -> bounded Go runner -> CfgPrinter -> DOT
 ```
 
-CFG is exposed by Go but not yet by web. CDG remains a neutral placeholder.
-The API, process, resource, and error contracts are recorded in
-[`backend-contracts.md`](backend-contracts.md).
+CDG remains a neutral placeholder. The API, process, resource, and error
+contracts are recorded in [`backend-contracts.md`](backend-contracts.md), and
+the browser lifecycle contract is recorded in
+[`web-contracts.md`](web-contracts.md).
 
 ## Repository and dependency map
 
@@ -109,8 +116,7 @@ applies visual policy. `DotWriter` owns only DOT syntax and escaping.
 
 ## Current deliberate limits
 
-- The browser exposes AST only; the HTTP API exposes AST and CFG.
-- CFG rendering and interaction are not yet available in the browser.
+- The browser and HTTP API expose AST and CFG.
 - CDG has no model or algorithm.
 - Native parsing is bounded but not sandboxed; the service is local-only.
 - Golden graph shape targets the documented Clang major version.
@@ -141,9 +147,7 @@ dispatch unless a concrete need proves simpler local helpers insufficient.
 
 ## Planned stages
 
-1. Add an AST/CFG selector and CFG rendering to web while preserving worker
-   isolation, sanitization, cancellation, and accessibility.
-2. Design CDG semantics, post-dominators, and control dependence from the
+1. Design CDG semantics, post-dominators, and control dependence from the
    project-owned CFG before implementation.
-3. Consider public deployment only after explicit process, filesystem, memory,
+2. Consider public deployment only after explicit process, filesystem, memory,
    CPU, and concurrency isolation is designed.

@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
+import type { AnalysisKind } from "./api/analysis";
 import { Editor } from "./editor/Editor";
 import { GraphView } from "./graph/GraphView";
-import { useAstGraph } from "./graph/useAstGraph";
+import {
+    useAnalysisGraph,
+    type AnalysisGraphStatus,
+} from "./graph/useAnalysisGraph";
 
 import { INITIAL_CODE } from "./examples/demo";
 
@@ -11,9 +15,11 @@ const maxEditorFontSize = 22;
 export function App() {
     const [code, setCode] = useState(INITIAL_CODE);
     const [editorFontSize, setEditorFontSize] = useState(15);
-    const { status, result, error, build, restart } = useAstGraph();
+    const { kind, selectKind, status, result, error, build, restart } =
+        useAnalysisGraph();
 
-    const buttonLabel = getButtonLabel(status);
+    const buttonLabel = getButtonLabel(status, kind);
+    const kindLabel = getKindLabel(kind);
 
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
@@ -38,6 +44,22 @@ export function App() {
         <div className="app">
             <div className="toolbar">
                 <span className="title">my-cpp-tools</span>
+                <fieldset
+                    className="analysis-selector"
+                    disabled={status !== "ready"}
+                >
+                    <legend>Analysis</legend>
+                    <AnalysisOption
+                        kind="ast"
+                        selectedKind={kind}
+                        onSelect={selectKind}
+                    />
+                    <AnalysisOption
+                        kind="cfg"
+                        selectedKind={kind}
+                        onSelect={selectKind}
+                    />
+                </fieldset>
                 <button
                     className="primary"
                     onClick={() => void build(code)}
@@ -111,13 +133,13 @@ export function App() {
                 </div>
 
                 <div className="pane">
-                    <div className="pane-header">AST graph</div>
+                    <div className="pane-header">{kindLabel} graph</div>
                     <div className="pane-body graph-pane">
                         {error ? (
                             <div
                                 className="error-panel"
                                 role="alert"
-                                data-testid="ast-error"
+                                data-testid="analysis-error"
                             >
                                 <strong>{error.message}</strong>
                                 {error.diagnostics && (
@@ -127,7 +149,7 @@ export function App() {
                         ) : (
                             <GraphView
                                 result={result}
-                                emptyMessage={getEmptyMessage(status)}
+                                emptyMessage={getEmptyMessage(status, kind)}
                             />
                         )}
                     </div>
@@ -137,21 +159,49 @@ export function App() {
     );
 }
 
-function getButtonLabel(status: ReturnType<typeof useAstGraph>["status"]) {
+type AnalysisOptionProps = {
+    kind: AnalysisKind;
+    selectedKind: AnalysisKind;
+    onSelect: (kind: AnalysisKind) => void;
+};
+
+function AnalysisOption({ kind, selectedKind, onSelect }: AnalysisOptionProps) {
+    const label = getKindLabel(kind);
+    return (
+        <label className="analysis-option">
+            <input
+                type="radio"
+                name="analysis-kind"
+                value={kind}
+                checked={selectedKind === kind}
+                onChange={() => onSelect(kind)}
+            />
+            <span>{label}</span>
+        </label>
+    );
+}
+
+function getKindLabel(kind: AnalysisKind) {
+    return kind.toUpperCase();
+}
+
+function getButtonLabel(status: AnalysisGraphStatus, kind: AnalysisKind) {
+    const label = getKindLabel(kind);
     switch (status) {
         case "initializing":
             return "Loading Graphviz…";
         case "building":
-            return "Building AST…";
+            return `Building ${label}…`;
         case "rendering":
             return "Rendering graph…";
         default:
-            return "Build AST";
+            return `Build ${label}`;
     }
 }
 
-function getEmptyMessage(status: ReturnType<typeof useAstGraph>["status"]) {
-    if (status === "building") return "The backend is building the AST…";
+function getEmptyMessage(status: AnalysisGraphStatus, kind: AnalysisKind) {
+    const label = getKindLabel(kind);
+    if (status === "building") return `The backend is building the ${label}…`;
     if (status === "rendering") return "Graphviz is rendering the graph…";
-    return "Enter C++ code and select Build AST";
+    return `Enter C++ code and select Build ${label}`;
 }
