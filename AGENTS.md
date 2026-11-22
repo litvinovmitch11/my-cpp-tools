@@ -10,8 +10,9 @@ three components:
 - `backend/`: Go HTTP API and bounded native-process orchestration;
 - `web/`: React/TypeScript editing and graph visualization.
 
-The current browser product exposes AST and CFG end to end. CDG is not
-implemented.
+The current browser product exposes AST and CFG end to end. The native CDG
+model and algorithms are implemented but are not yet exposed by the CLI, API,
+or browser.
 
 ## Required agent context
 
@@ -26,6 +27,7 @@ Human-facing documentation has a different purpose:
 - [`docs/architecture.md`](docs/architecture.md): concise system design;
 - [`docs/ast-model.md`](docs/ast-model.md): AST semantics and coverage;
 - [`docs/cfg-model.md`](docs/cfg-model.md): CFG semantics and coverage.
+- [`docs/cdg-model.md`](docs/cdg-model.md): CDG and post-dominator semantics.
 
 Do not place agent restoration instructions, temporary plans, or raw
 conversation history in human-facing documentation.
@@ -37,8 +39,8 @@ conversation history in human-facing documentation.
 2. CFG must be built manually from the project-owned AST. Do not use
    `clang::CFG`, LLVM analysis passes, compiler CFG output, or a third-party
    CFG builder.
-3. CDG must eventually be built manually from the project-owned CFG and
-   project-owned control-dependence algorithms.
+3. CDG is built manually from the project-owned CFG and project-owned
+   post-dominator and control-dependence algorithms.
 4. Graphviz is a layout/rendering dependency only.
 5. Go orchestrates analysis and owns API contracts; it must not duplicate
    native analysis algorithms.
@@ -48,9 +50,9 @@ conversation history in human-facing documentation.
    Core graph, source, AST, CFG, CDG, DOT, and presentation modules remain
    independent of Clang and LLVM.
 8. Analysis support must not disappear downstream: every valid function AST
-   produces a CFG, and once CDG is implemented every valid function CFG must
-   produce a CDG. Downstream models may omit details irrelevant to their
-   analysis, but must not reject an otherwise valid upstream graph.
+   produces a CFG, and every valid function CFG produces a CDG. Downstream
+   models may omit details irrelevant to their analysis, but must not reject
+   an otherwise valid upstream graph.
 
 The intended analysis dependency direction is:
 
@@ -66,7 +68,7 @@ graph/source -> ast -> cfg -> cdg
 Unless a task explicitly expands scope:
 
 - keep the browser product on AST and CFG;
-- leave CDG as a neutral placeholder;
+- leave `CdgPrinter`, the backend, and the browser CDG mode neutral;
 - do not add real-time analysis or unrelated graph types;
 - do not expose the local-only backend to untrusted networks.
 

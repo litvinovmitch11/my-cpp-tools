@@ -76,10 +76,9 @@ coverage reference.
   Clang-to-DOT shortcut.
 - Every valid `FunctionAstGraph` produces a CFG. Control-relevant project kinds
   are explicit; other syntax is an atomic operation or transparent wrapper.
-- Once CDG is implemented, every valid `FunctionCfgGraph` must produce a CDG.
-  CDG may omit nodes irrelevant to control dependence, but it must not reject a
-  valid CFG merely because the originating AST construct was represented at a
-  higher level.
+- Every valid `FunctionCfgGraph` produces a `FunctionCdgGraph`. The CDG retains
+  exactly one node per CFG node and must not reject a valid CFG merely because
+  the originating AST construct was represented at a higher level.
 - Each function CFG has exactly one entry and one exit. Conditions, indirect
   goto, `asm goto`, and potentially throwing operations may branch. Other
   transfers have one resolved successor.
@@ -105,8 +104,13 @@ coverage reference.
   exceptional edges are a documented abstraction rather than copied lowering.
 - CFG collection is transactional: either all function graphs are returned or
   a typed error is returned and no partial DOT is emitted.
-- Leave `CdgPrinter` and the CDG library neutral until the CDG model and
-  algorithms are explicitly designed.
+- CDG uses strong, termination-sensitive post-dominance: every maximal path,
+  including infinite and finite no-return paths, participates. Do not attach
+  such paths to the ordinary function exit artificially.
+- CDG edges retain the controlling CFG edge ID, kind, and label. Exceptional,
+  indirect, assembly, fallthrough, suspend, and resume edges participate in
+  the same project-owned algorithm.
+- Keep `CdgPrinter` neutral until deterministic CDG presentation is designed.
 
 See [`docs/cfg-model.md`](../docs/cfg-model.md) for the public semantic and
 coverage reference.

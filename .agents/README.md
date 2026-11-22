@@ -14,7 +14,8 @@ For every task:
 3. For native graph work, read [`cpp-contracts.md`](cpp-contracts.md) and the
    relevant human semantic reference:
    [`docs/ast-model.md`](../docs/ast-model.md) or
-   [`docs/cfg-model.md`](../docs/cfg-model.md).
+   [`docs/cfg-model.md`](../docs/cfg-model.md), and read
+   [`docs/cdg-model.md`](../docs/cdg-model.md) for CDG work.
 4. Read [`workflow.md`](workflow.md) before validation or repository-wide
    changes.
 5. Read [`testing-contracts.md`](testing-contracts.md) before changing a

@@ -47,9 +47,11 @@ The project-owned CFG is also exposed by the backend:
 POST /api/v1/cfg -> bounded Go runner -> CfgPrinter -> DOT
 ```
 
-CDG remains a neutral placeholder. The API, process, resource, and error
-contracts are recorded in [`backend-contracts.md`](backend-contracts.md), and
-the browser lifecycle contract is recorded in
+The native CDG model, strong post-dominator relation, and CFG-to-CDG builder
+are implemented. `CdgPrinter`, the API, and the browser remain neutral. The
+API, process, resource, and error contracts are recorded in
+[`backend-contracts.md`](backend-contracts.md), and the browser lifecycle
+contract is recorded in
 [`web-contracts.md`](web-contracts.md).
 
 ## Repository and dependency map
@@ -62,7 +64,7 @@ Compiler-independent native modules:
 | `source` | function identity and byte ranges | standard library |
 | `ast` | owning AST domain and validation | `graph`, `source` |
 | `cfg` | owning CFG and AST-to-CFG transformation | `ast`, `graph`, `source` |
-| `cdg` | future CFG-to-CDG transformation | `cfg` |
+| `cdg` | owning CDG, post-dominators, and CFG-to-CDG transformation | `cfg` |
 | `dot` | safe DOT syntax writer | standard library |
 | `presentation` | visual policy and AST/CFG serialization | domain models, `dot` |
 
@@ -73,7 +75,7 @@ Compiler-aware native modules:
 | `clang_ast` | collect Clang functions and map compiler nodes to owning AST values |
 | `AstPrinter` | compose Clang tooling, AST builder, and presentation |
 | `CfgPrinter` | compose Clang tooling, AST builder, CFG builder, and presentation |
-| `CdgPrinter` | neutral executable placeholder until CDG is designed |
+| `CdgPrinter` | neutral executable placeholder until CDG presentation is added |
 
 Dependencies point forward through analysis stages. Domain layers never depend
 on presentation, tools, backend, or web. Compiler includes and link libraries
@@ -84,7 +86,7 @@ stay private to the adapter and composition roots.
 `DirectedGraph<NodePayload, EdgePayload>` owns generic graph storage. Its
 nested ID types prevent mixing identifiers from graph specializations.
 
-`AstGraph`, `CfgGraph`, and the future `CdgGraph` are aliases with different
+`AstGraph`, `CfgGraph`, and `CdgGraph` are aliases with different
 payloads, not an inheritance hierarchy. Their domains have different
 invariants and are transformed into one another rather than substituted
 polymorphically.
@@ -117,7 +119,7 @@ applies visual policy. `DotWriter` owns only DOT syntax and escaping.
 ## Current deliberate limits
 
 - The browser and HTTP API expose AST and CFG.
-- CDG has no model or algorithm.
+- CDG has no presentation, CLI, backend, or browser integration.
 - Native parsing is bounded but not sandboxed; the service is local-only.
 - Golden graph shape targets the documented Clang major version.
 - Graphs and analyses are function-local; interprocedural analysis requires a
@@ -147,7 +149,7 @@ dispatch unless a concrete need proves simpler local helpers insufficient.
 
 ## Planned stages
 
-1. Design CDG semantics, post-dominators, and control dependence from the
-   project-owned CFG before implementation.
+1. Add CDG presentation and product integration without changing the native
+   semantic contract implicitly.
 2. Consider public deployment only after explicit process, filesystem, memory,
    CPU, and concurrency isolation is designed.

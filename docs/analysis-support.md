@@ -5,17 +5,17 @@ abstractions and capabilities that do not exist yet. A valid construct is not
 “unsupported” merely because the graph represents it at a higher level than a
 compiler would.
 
-The complete construct-by-construct AST, CFG, and future CDG coverage matrix is
+The complete construct-by-construct AST, CFG, and native CDG coverage matrix is
 in the [README](../README.md#c-ast-construct-coverage). Its **Shadowed** entries
 are the construct-level form of the documented high-level abstractions below.
 Invalid source code and malformed internal graphs are tested failure cases, not
 language-support categories.
 
-Support must not disappear between stages. Every valid function AST produces a
-CFG. Once CDG exists, every valid function CFG must produce a CDG. A downstream
-stage may deliberately omit details that are irrelevant to its analysis, but it
-must not reject a valid upstream graph merely because its representation is
-more abstract.
+Support does not disappear between stages. Every valid function AST produces a
+CFG, and every valid function CFG produces a CDG. A downstream stage may
+deliberately omit details that are irrelevant to its analysis, but it must not
+reject a valid upstream graph merely because its representation is more
+abstract.
 
 ## Supported AST foundation
 
@@ -80,11 +80,28 @@ These behaviors work according to a narrower documented guarantee:
 These are valid CFGs within the project model. They must not be reported as
 parse failures or unsupported C++.
 
+## Supported native CDG semantics
+
+The native CDG contract guarantees:
+
+- exactly one CDG node per CFG node, including unreachable nodes;
+- strong post-dominance over finite terminating, finite no-return, and infinite
+  paths;
+- deterministic control-dependence edges retaining their controlling CFG edge
+  kind and label;
+- ordinary, exceptional, switch, indirect-goto, assembly, fallthrough,
+  suspend, and resume alternatives participating in the same analysis;
+- a valid `FunctionCdgGraph` for every valid `FunctionCfgGraph`.
+
+Focused tests cover diamonds, loops, switch branches, exceptions, indirect and
+assembly branches, unreachable components, and no-return paths. The full
+semantic contract is in [CDG model and semantics](cdg-model.md).
+
 ## Not implemented
 
 The project currently makes no claim to provide:
 
-- CDG construction, post-dominators, or control-dependence results;
+- CDG DOT serialization, CLI/API exposure, or browser rendering;
 - data-flow, def-use, alias, value-range, or lifetime analysis;
 - interprocedural CFG composition or call-graph analysis;
 - complete type, template-argument, preprocessor, comment, or attribute graphs;

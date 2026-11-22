@@ -32,20 +32,23 @@ React editor + AST/CFG selector
 
 The monorepo has three components:
 
-- `cpp/` contains the Clang-based AST adapter and the project-owned AST and CFG
-  graph tools.
+- `cpp/` contains the Clang-based AST adapter and the project-owned AST, CFG,
+  and native CDG analysis.
 - `backend/` contains the Go API, validation, process limits, and error mapping.
 - `web/` contains the React/TypeScript editor and Graphviz visualization.
 
 The browser exposes AST and CFG. `CfgPrinter` builds CFG manually from the
-project-owned AST. CDG remains outside the current browser scope and will be
-built manually from that CFG. The project does not use `clang::CFG`, LLVM
-analysis passes, or third-party CFG/CDG builders.
+project-owned AST. The native CDG model, post-dominator relation, and builder
+derive control dependence manually from that CFG, but CDG is not yet exposed
+through a CLI, backend route, or browser mode. The project does not use
+`clang::CFG`, LLVM analysis passes, or third-party CFG/CDG builders.
 
 See [AST graph model and coverage](docs/ast-model.md) for the exact function
 selection rules, node and edge categories, tested constructs, and known gaps.
 See [CFG graph model and coverage](docs/cfg-model.md) for CFG invariants,
 construction rules, semantic abstractions, and tested constructs.
+See [CDG model and semantics](docs/cdg-model.md) for strong post-dominance,
+control-dependence rules, termination behavior, and CFG traceability.
 See the [architecture overview](docs/architecture.md) for component ownership,
 dependency boundaries, supported analysis, deliberate limits, and the roadmap.
 See [analysis support and guarantees](docs/analysis-support.md) for the detailed
@@ -238,7 +241,7 @@ local development environment.
 
 ## Next steps
 
-- manual CDG construction from the project-owned CFG;
+- CDG DOT, CLI, backend, and browser integration;
 - sandboxed packaging and deployment only after explicit isolation work.
 
 Contributor automation should read the project constraints in
@@ -257,62 +260,62 @@ shadowed.
 
 | C++ / Clang AST construct | Project AST | CFG | CDG |
 | --- | --- | --- | --- |
-| Function definitions: free functions, methods and operators | **Supported** — `FunctionDeclaration` | **Supported** — function entry, body and exit | **Not supported yet** |
-| Constructors and destructors | **Supported** — `FunctionDeclaration` with function category | **Supported** — initializers, body and function-try-block rules | **Not supported yet** |
-| Primary function templates and explicit specializations | **Supported** — collected `FunctionDeclaration` | **Supported** — concrete or dependent control flow | **Not supported yet** |
-| Explicitly defaulted or deleted functions | **Supported** — collected `FunctionDeclaration` | **Supported** — valid empty function CFG | **Not supported yet** |
-| Function parameters (`ParmVarDecl`) | **Supported** — `ParameterDeclaration` | **Shadowed** — descriptive, not executable | **Not supported yet** |
-| Local variables (`VarDecl`) | **Supported** — `VariableDeclaration` | **Supported** — initializer before declaration operation | **Not supported yet** |
-| Fields (`FieldDecl`) | **Supported** — `FieldDeclaration` | **Shadowed** — descriptive unless used by an expression | **Not supported yet** |
-| Records and local classes (`RecordDecl`) | **Supported** — `RecordDeclaration` | **Shadowed** — declaration is atomic; methods have separate CFGs | **Not supported yet** |
-| Other traversed declarations: bindings, enums, aliases, using declarations, access declarations and static assertions | **Shadowed** — `OtherDeclaration` with concrete Clang kind | **Shadowed** — atomic or descriptive operation | **Not supported yet** |
-| Compound statements and declaration statements | **Supported** — `CompoundStatement`, `DeclarationStatement` | **Supported** — ordered child sequence | **Not supported yet** |
-| Runtime `if` | **Supported** — `IfStatement` with semantic edge roles | **Supported** — true and false branches | **Not supported yet** |
-| `if constexpr` | **Supported** — `ConstexprIfStatement` with selection metadata | **Supported** — selected branch or both dependent branches | **Not supported yet** |
-| `switch` | **Supported** — `SwitchStatement` | **Supported** — case, default and fallthrough flow | **Not supported yet** |
-| `case`, GNU case range and `default` | **Supported** — `CaseStatement`, `DefaultStatement` | **Supported** — labeled branch targets | **Not supported yet** |
-| Classic `for` | **Supported** — `ForStatement` | **Supported** — initializer, condition, increment, body, break and continue | **Not supported yet** |
-| Range-based `for` | **Supported** — `RangeForStatement` | **Shadowed** — supported high-level range protocol rather than Clang desugaring | **Not supported yet** |
-| `while` and `do` / `while` | **Supported** — `WhileStatement`, `DoStatement` | **Supported** — loop condition, back edge, break and continue | **Not supported yet** |
-| `return` | **Supported** — `ReturnStatement` | **Supported** — value evaluation followed by transfer to exit | **Not supported yet** |
-| `break` and `continue` | **Supported** — `BreakStatement`, `ContinueStatement` | **Supported** — resolved loop or switch transfer | **Not supported yet** |
-| Direct `goto` and source labels | **Supported** — `GotoStatement`, `LabelStatement` | **Supported** — resolved target and unreachable regions | **Not supported yet** |
-| GNU indirect goto and address-of-label | **Supported** — `IndirectGotoStatement`, `AddressOfLabelExpression` | **Supported** — explicit possible-target branches | **Not supported yet** |
-| C++ `try`, typed `catch` and catch-all | **Supported** — `TryStatement`, `CatchStatement` | **Supported** — handler dispatch and function-try semantics | **Not supported yet** |
-| `throw` and rethrow | **Supported** — `ThrowExpression` | **Supported** — exceptional transfer to handler or exit | **Not supported yet** |
-| Ordinary inline assembly | **Supported** — `AsmStatement` | **Shadowed** — atomic operation | **Not supported yet** |
-| `asm goto` | **Supported** — `AsmStatement` with target metadata | **Supported** — label branches and fallthrough | **Not supported yet** |
-| Coroutine body | **Supported** — `CoroutineBodyStatement` | **Shadowed** — high-level coroutine body, not generated state machine | **Not supported yet** |
-| `co_return` | **Supported** — `CoReturnStatement` | **Supported** — value evaluation and transfer to exit | **Not supported yet** |
-| `co_await` and `co_yield` | **Supported** — `CoAwaitExpression`, `CoYieldExpression` | **Shadowed** — high-level ready, suspend and resume flow | **Not supported yet** |
-| Other traversed non-expression statements | **Shadowed** — `OtherStatement` with concrete Clang kind | **Shadowed** — transparent child flow or atomic operation | **Not supported yet** |
-| Lambda expressions and captures | **Supported** — `LambdaExpression`; body retained in enclosing AST | **Supported** — captures execute; lambda body is opaque in enclosing CFG | **Not supported yet** |
-| Function, member and overloaded-operator calls | **Supported** — `CallExpression` | **Shadowed** — atomic intraprocedural call with conservative exceptional flow | **Not supported yet** |
-| Built-in binary operators, including assignment, comma, `&&` and `||` | **Supported** — `BinaryExpression` | **Supported** — sequencing and short-circuit flow where required | **Not supported yet** |
-| Built-in unary operators | **Supported** — `UnaryExpression` | **Supported** for `!`; otherwise **Shadowed** as an atomic expression | **Not supported yet** |
-| Conditional expressions (`?:` and GNU omitted-middle form) | **Supported** — `ConditionalExpression` | **Supported** — conditional value flow | **Not supported yet** |
-| GNU `__builtin_choose_expr` | **Supported** — `CompileTimeConditionalExpression` | **Supported** — selected or dependent branch flow | **Not supported yet** |
-| Declaration references and member access | **Supported** — `DeclarationReferenceExpression`, `MemberExpression` | **Shadowed** — atomic value operations | **Not supported yet** |
-| Explicit and implicit casts | **Supported** — `CastExpression` | **Shadowed** — atomic or transparent around control-relevant children | **Not supported yet** |
-| Integer, floating, character, string, Boolean and null-pointer literals | **Supported** — `LiteralExpression` | **Shadowed** — atomic values | **Not supported yet** |
-| Construction, `new`, `delete`, `this`, subscripting, initializer lists, `sizeof`, `noexcept`, `typeid`, `requires`, pack and trait expressions | **Shadowed** — `OtherExpression` with concrete Clang kind and semantic metadata | **Shadowed** — atomic or transparent; unevaluated children do not execute | **Not supported yet** |
-| Any other traversed Clang expression | **Shadowed** — `OtherExpression` with concrete Clang kind | **Shadowed** — atomic operation or preserved child control flow | **Not supported yet** |
-| Implicit expressions | **Supported** — retained under their explicit or fallback expression kind | **Supported / Shadowed** according to their project kind | **Not supported yet** |
-| Implicit declarations | **Not supported** as nodes; relevant descendants are still traversed | Not applicable | **Not supported yet** |
-| Declarations without definitions | **Not supported** as function graphs | Not applicable | **Not supported yet** |
-| Header-only definitions, implicit template instantiations and duplicate function identities | **Not supported** as separately collected function graphs | Not applicable | **Not supported yet** |
-| Lambda call operators as separate functions | **Not supported** as separate graphs; lambda body stays in its enclosing AST | Not applicable | **Not supported yet** |
-| Translation-unit structure outside collected function definitions | **Not supported** | Not applicable | **Not supported yet** |
-| Types, template arguments and complete template structure as independent nodes | **Not supported**; selected type text and template semantics may be metadata | Not applicable | **Not supported yet** |
-| Attributes, comments and preprocessor directives as independent nodes | **Not supported**; selected attributes such as `noreturn` may become metadata | Not applicable | **Not supported yet** |
-| Name lookup, overload sets and symbol-reference edges | **Not supported** | Not applicable | **Not supported yet** |
+| Function definitions: free functions, methods and operators | **Supported** — `FunctionDeclaration` | **Supported** — function entry, body and exit | **Supported natively** — derived from the documented CFG representation |
+| Constructors and destructors | **Supported** — `FunctionDeclaration` with function category | **Supported** — initializers, body and function-try-block rules | **Supported natively** — derived from the documented CFG representation |
+| Primary function templates and explicit specializations | **Supported** — collected `FunctionDeclaration` | **Supported** — concrete or dependent control flow | **Supported natively** — derived from the documented CFG representation |
+| Explicitly defaulted or deleted functions | **Supported** — collected `FunctionDeclaration` | **Supported** — valid empty function CFG | **Supported natively** — derived from the documented CFG representation |
+| Function parameters (`ParmVarDecl`) | **Supported** — `ParameterDeclaration` | **Shadowed** — descriptive, not executable | **Supported natively** — derived from the documented CFG representation |
+| Local variables (`VarDecl`) | **Supported** — `VariableDeclaration` | **Supported** — initializer before declaration operation | **Supported natively** — derived from the documented CFG representation |
+| Fields (`FieldDecl`) | **Supported** — `FieldDeclaration` | **Shadowed** — descriptive unless used by an expression | **Supported natively** — derived from the documented CFG representation |
+| Records and local classes (`RecordDecl`) | **Supported** — `RecordDeclaration` | **Shadowed** — declaration is atomic; methods have separate CFGs | **Supported natively** — derived from the documented CFG representation |
+| Other traversed declarations: bindings, enums, aliases, using declarations, access declarations and static assertions | **Shadowed** — `OtherDeclaration` with concrete Clang kind | **Shadowed** — atomic or descriptive operation | **Supported natively** — derived from the documented CFG representation |
+| Compound statements and declaration statements | **Supported** — `CompoundStatement`, `DeclarationStatement` | **Supported** — ordered child sequence | **Supported natively** — derived from the documented CFG representation |
+| Runtime `if` | **Supported** — `IfStatement` with semantic edge roles | **Supported** — true and false branches | **Supported natively** — derived from the documented CFG representation |
+| `if constexpr` | **Supported** — `ConstexprIfStatement` with selection metadata | **Supported** — selected branch or both dependent branches | **Supported natively** — derived from the documented CFG representation |
+| `switch` | **Supported** — `SwitchStatement` | **Supported** — case, default and fallthrough flow | **Supported natively** — derived from the documented CFG representation |
+| `case`, GNU case range and `default` | **Supported** — `CaseStatement`, `DefaultStatement` | **Supported** — labeled branch targets | **Supported natively** — derived from the documented CFG representation |
+| Classic `for` | **Supported** — `ForStatement` | **Supported** — initializer, condition, increment, body, break and continue | **Supported natively** — derived from the documented CFG representation |
+| Range-based `for` | **Supported** — `RangeForStatement` | **Shadowed** — supported high-level range protocol rather than Clang desugaring | **Supported natively** — derived from the documented CFG representation |
+| `while` and `do` / `while` | **Supported** — `WhileStatement`, `DoStatement` | **Supported** — loop condition, back edge, break and continue | **Supported natively** — derived from the documented CFG representation |
+| `return` | **Supported** — `ReturnStatement` | **Supported** — value evaluation followed by transfer to exit | **Supported natively** — derived from the documented CFG representation |
+| `break` and `continue` | **Supported** — `BreakStatement`, `ContinueStatement` | **Supported** — resolved loop or switch transfer | **Supported natively** — derived from the documented CFG representation |
+| Direct `goto` and source labels | **Supported** — `GotoStatement`, `LabelStatement` | **Supported** — resolved target and unreachable regions | **Supported natively** — derived from the documented CFG representation |
+| GNU indirect goto and address-of-label | **Supported** — `IndirectGotoStatement`, `AddressOfLabelExpression` | **Supported** — explicit possible-target branches | **Supported natively** — derived from the documented CFG representation |
+| C++ `try`, typed `catch` and catch-all | **Supported** — `TryStatement`, `CatchStatement` | **Supported** — handler dispatch and function-try semantics | **Supported natively** — derived from the documented CFG representation |
+| `throw` and rethrow | **Supported** — `ThrowExpression` | **Supported** — exceptional transfer to handler or exit | **Supported natively** — derived from the documented CFG representation |
+| Ordinary inline assembly | **Supported** — `AsmStatement` | **Shadowed** — atomic operation | **Supported natively** — derived from the documented CFG representation |
+| `asm goto` | **Supported** — `AsmStatement` with target metadata | **Supported** — label branches and fallthrough | **Supported natively** — derived from the documented CFG representation |
+| Coroutine body | **Supported** — `CoroutineBodyStatement` | **Shadowed** — high-level coroutine body, not generated state machine | **Supported natively** — derived from the documented CFG representation |
+| `co_return` | **Supported** — `CoReturnStatement` | **Supported** — value evaluation and transfer to exit | **Supported natively** — derived from the documented CFG representation |
+| `co_await` and `co_yield` | **Supported** — `CoAwaitExpression`, `CoYieldExpression` | **Shadowed** — high-level ready, suspend and resume flow | **Supported natively** — derived from the documented CFG representation |
+| Other traversed non-expression statements | **Shadowed** — `OtherStatement` with concrete Clang kind | **Shadowed** — transparent child flow or atomic operation | **Supported natively** — derived from the documented CFG representation |
+| Lambda expressions and captures | **Supported** — `LambdaExpression`; body retained in enclosing AST | **Supported** — captures execute; lambda body is opaque in enclosing CFG | **Supported natively** — derived from the documented CFG representation |
+| Function, member and overloaded-operator calls | **Supported** — `CallExpression` | **Shadowed** — atomic intraprocedural call with conservative exceptional flow | **Supported natively** — derived from the documented CFG representation |
+| Built-in binary operators, including assignment, comma, `&&` and `||` | **Supported** — `BinaryExpression` | **Supported** — sequencing and short-circuit flow where required | **Supported natively** — derived from the documented CFG representation |
+| Built-in unary operators | **Supported** — `UnaryExpression` | **Supported** for `!`; otherwise **Shadowed** as an atomic expression | **Supported natively** — derived from the documented CFG representation |
+| Conditional expressions (`?:` and GNU omitted-middle form) | **Supported** — `ConditionalExpression` | **Supported** — conditional value flow | **Supported natively** — derived from the documented CFG representation |
+| GNU `__builtin_choose_expr` | **Supported** — `CompileTimeConditionalExpression` | **Supported** — selected or dependent branch flow | **Supported natively** — derived from the documented CFG representation |
+| Declaration references and member access | **Supported** — `DeclarationReferenceExpression`, `MemberExpression` | **Shadowed** — atomic value operations | **Supported natively** — derived from the documented CFG representation |
+| Explicit and implicit casts | **Supported** — `CastExpression` | **Shadowed** — atomic or transparent around control-relevant children | **Supported natively** — derived from the documented CFG representation |
+| Integer, floating, character, string, Boolean and null-pointer literals | **Supported** — `LiteralExpression` | **Shadowed** — atomic values | **Supported natively** — derived from the documented CFG representation |
+| Construction, `new`, `delete`, `this`, subscripting, initializer lists, `sizeof`, `noexcept`, `typeid`, `requires`, pack and trait expressions | **Shadowed** — `OtherExpression` with concrete Clang kind and semantic metadata | **Shadowed** — atomic or transparent; unevaluated children do not execute | **Supported natively** — derived from the documented CFG representation |
+| Any other traversed Clang expression | **Shadowed** — `OtherExpression` with concrete Clang kind | **Shadowed** — atomic operation or preserved child control flow | **Supported natively** — derived from the documented CFG representation |
+| Implicit expressions | **Supported** — retained under their explicit or fallback expression kind | **Supported / Shadowed** according to their project kind | **Supported natively** — derived from the documented CFG representation |
+| Implicit declarations | **Not supported** as nodes; relevant descendants are still traversed | Not applicable | Not applicable — no function CFG node exists |
+| Declarations without definitions | **Not supported** as function graphs | Not applicable | Not applicable — no function CFG node exists |
+| Header-only definitions, implicit template instantiations and duplicate function identities | **Not supported** as separately collected function graphs | Not applicable | Not applicable — no function CFG node exists |
+| Lambda call operators as separate functions | **Not supported** as separate graphs; lambda body stays in its enclosing AST | Not applicable | Not applicable — no function CFG node exists |
+| Translation-unit structure outside collected function definitions | **Not supported** | Not applicable | Not applicable — no function CFG node exists |
+| Types, template arguments and complete template structure as independent nodes | **Not supported**; selected type text and template semantics may be metadata | Not applicable | Not applicable — no function CFG node exists |
+| Attributes, comments and preprocessor directives as independent nodes | **Not supported**; selected attributes such as `noreturn` may become metadata | Not applicable | Not applicable — no function CFG node exists |
+| Name lookup, overload sets and symbol-reference edges | **Not supported** | Not applicable | Not applicable — no function CFG node exists |
 
-Support must not disappear downstream: every valid `FunctionAstGraph` must
-produce a `FunctionCfgGraph`; once CDG is implemented, every valid
-`FunctionCfgGraph` must produce a `FunctionCdgGraph`. A downstream graph may
-omit syntax irrelevant to its analysis, but it must not reject an otherwise
-valid upstream graph. Invalid source code and malformed internal graphs are
-negative inputs rather than coverage categories.
+Support must not disappear downstream: every valid `FunctionAstGraph` produces
+a `FunctionCfgGraph`, and every valid `FunctionCfgGraph` produces a
+`FunctionCdgGraph`. A downstream graph may omit syntax irrelevant to its
+analysis, but it must not reject an otherwise valid upstream graph. Invalid
+source code and malformed internal graphs are negative inputs rather than
+coverage categories.
 
 ## License
 
