@@ -10,9 +10,7 @@ three components:
 - `backend/`: Go HTTP API and bounded native-process orchestration;
 - `web/`: React/TypeScript editing and graph visualization.
 
-The current browser product exposes AST and CFG end to end. The native CDG
-model and algorithms are implemented but are not yet exposed by the CLI, API,
-or browser.
+The current browser product exposes AST, CFG, and CDG end to end.
 
 ## Required agent context
 
@@ -67,8 +65,7 @@ graph/source -> ast -> cfg -> cdg
 
 Unless a task explicitly expands scope:
 
-- keep the browser product on AST and CFG;
-- leave `CdgPrinter`, the backend, and the browser CDG mode neutral;
+- keep the browser product on AST, CFG, and CDG;
 - do not add real-time analysis or unrelated graph types;
 - do not expose the local-only backend to untrusted networks.
 

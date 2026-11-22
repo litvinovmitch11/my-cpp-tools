@@ -60,8 +60,8 @@ coverage](ast-model.md).
 
 Focused unit tests assert semantic ordering, edge kinds, reachability,
 transactionality, exceptional targets, and graph invariants. Golden tests then
-exercise every example through Clang, both graph builders, and deterministic
-DOT serialization.
+exercise every example through Clang, the native analysis pipeline, and
+deterministic AST, CFG, and CDG DOT serialization.
 
 ## Supported with deliberate abstraction
 
@@ -101,7 +101,6 @@ semantic contract is in [CDG model and semantics](cdg-model.md).
 
 The project currently makes no claim to provide:
 
-- CDG DOT serialization, CLI/API exposure, or browser rendering;
 - data-flow, def-use, alias, value-range, or lifetime analysis;
 - interprocedural CFG composition or call-graph analysis;
 - complete type, template-argument, preprocessor, comment, or attribute graphs;

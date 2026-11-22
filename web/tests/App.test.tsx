@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
     restart: vi.fn(),
     selectKind: vi.fn(),
     state: {
-        kind: "ast" as "ast" | "cfg",
+        kind: "ast" as "ast" | "cfg" | "cdg",
         status: "ready" as
             | "initializing"
             | "ready"
@@ -62,7 +62,7 @@ describe("App", () => {
         mocks.state.error = null;
     });
 
-    it("selects AST by default and lets the user choose CFG", () => {
+    it("selects AST by default and lets the user choose CFG or CDG", () => {
         render(<App />);
 
         expect(
@@ -71,6 +71,8 @@ describe("App", () => {
         ).toBe(true);
         fireEvent.click(screen.getByRole("radio", { name: "CFG" }));
         expect(mocks.selectKind).toHaveBeenCalledWith("cfg");
+        fireEvent.click(screen.getByRole("radio", { name: "CDG" }));
+        expect(mocks.selectKind).toHaveBeenLastCalledWith("cdg");
         expect(mocks.build).not.toHaveBeenCalled();
     });
 
@@ -82,6 +84,17 @@ describe("App", () => {
         expect(screen.getByText("CFG graph")).toBeTruthy();
         expect(
             screen.getByText("Enter C++ code and select Build CFG"),
+        ).toBeTruthy();
+    });
+
+    it("uses CDG labels for the selected analysis", () => {
+        mocks.state.kind = "cdg";
+        render(<App />);
+
+        expect(screen.getByRole("button", { name: "Build CDG" })).toBeTruthy();
+        expect(screen.getByText("CDG graph")).toBeTruthy();
+        expect(
+            screen.getByText("Enter C++ code and select Build CDG"),
         ).toBeTruthy();
     });
 

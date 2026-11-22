@@ -22,10 +22,11 @@ func TestNewValidatesOptionsAndBinaries(t *testing.T) {
 		paths   BinaryPaths
 		options Options
 	}{
-		{name: "missing AST binary", paths: BinaryPaths{AST: missing, CFG: script}, options: testOptions()},
-		{name: "missing CFG binary", paths: BinaryPaths{AST: script, CFG: missing}, options: testOptions()},
-		{name: "zero timeout", paths: BinaryPaths{AST: script, CFG: script}, options: Options{MaxConcurrent: 1}},
-		{name: "zero concurrency", paths: BinaryPaths{AST: script, CFG: script}, options: Options{Timeout: time.Second}},
+		{name: "missing AST binary", paths: BinaryPaths{AST: missing, CFG: script, CDG: script}, options: testOptions()},
+		{name: "missing CFG binary", paths: BinaryPaths{AST: script, CFG: missing, CDG: script}, options: testOptions()},
+		{name: "missing CDG binary", paths: BinaryPaths{AST: script, CFG: script, CDG: missing}, options: testOptions()},
+		{name: "zero timeout", paths: BinaryPaths{AST: script, CFG: script, CDG: script}, options: Options{MaxConcurrent: 1}},
+		{name: "zero concurrency", paths: BinaryPaths{AST: script, CFG: script, CDG: script}, options: Options{Timeout: time.Second}},
 	}
 
 	for _, test := range tests {
@@ -40,7 +41,11 @@ func TestNewValidatesOptionsAndBinaries(t *testing.T) {
 func TestBuildGraphSelectsBinaryForKind(t *testing.T) {
 	astScript := writeScript(t, "printf 'digraph AST {}'")
 	cfgScript := writeScript(t, "printf 'digraph CFG {}'")
-	runner := newTestRunner(t, astScript, cfgScript, testOptions())
+	cdgScript := writeScript(t, "printf 'digraph CDG {}'")
+	runner, err := New(BinaryPaths{AST: astScript, CFG: cfgScript, CDG: cdgScript}, testOptions())
+	if err != nil {
+		t.Fatalf("create runner: %v", err)
+	}
 
 	tests := []struct {
 		kind analysis.Kind
@@ -48,6 +53,7 @@ func TestBuildGraphSelectsBinaryForKind(t *testing.T) {
 	}{
 		{kind: analysis.AST, want: "digraph AST {}"},
 		{kind: analysis.CFG, want: "digraph CFG {}"},
+		{kind: analysis.CDG, want: "digraph CDG {}"},
 	}
 	for _, test := range tests {
 		t.Run(string(test.kind), func(t *testing.T) {
@@ -284,7 +290,7 @@ func TestBuildGraphRejectsUnknownKind(t *testing.T) {
 	script := writeScript(t, "printf 'must not run'")
 	runner := newTestRunner(t, script, script, testOptions())
 
-	if _, err := runner.BuildGraph(context.Background(), analysis.Kind("cdg"), "source"); err == nil {
+	if _, err := runner.BuildGraph(context.Background(), analysis.Kind("pdg"), "source"); err == nil {
 		t.Fatal("expected unsupported-kind error")
 	}
 }
@@ -321,7 +327,7 @@ func TestLimitedBuffer(t *testing.T) {
 
 func newTestRunner(t *testing.T, astPath, cfgPath string, options Options) *Runner {
 	t.Helper()
-	runner, err := New(BinaryPaths{AST: astPath, CFG: cfgPath}, options)
+	runner, err := New(BinaryPaths{AST: astPath, CFG: cfgPath, CDG: cfgPath}, options)
 	if err != nil {
 		t.Fatalf("create runner: %v", err)
 	}

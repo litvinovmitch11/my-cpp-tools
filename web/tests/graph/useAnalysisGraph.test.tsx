@@ -42,13 +42,14 @@ describe("useAnalysisGraph", () => {
     it.each([
         ["ast", "digraph AST {}"],
         ["cfg", "digraph CFG {}"],
+        ["cdg", "digraph CDG {}"],
     ] as const)("builds and renders a %s graph", async (kind, dot) => {
         const request = deferred<string>();
         mocks.buildAnalysisGraph.mockReturnValueOnce(request.promise);
         const { result } = renderHook(() => useAnalysisGraph());
 
-        if (kind === "cfg") {
-            act(() => result.current.selectKind("cfg"));
+        if (kind !== "ast") {
+            act(() => result.current.selectKind(kind));
         }
         act(() => void result.current.build("int main() {}"));
         expect(result.current.status).toBe("building");

@@ -75,7 +75,7 @@ test("builds and renders an AST by default", async ({ page }) => {
     ).toBe(true);
 });
 
-test("switches from AST to CFG without retaining the old graph", async ({
+test("switches between graph kinds without retaining the old graph", async ({
     page,
 }) => {
     await page.goto("/");
@@ -103,14 +103,29 @@ test("switches from AST to CFG without retaining the old graph", async ({
     await expect(cfgGraph).toContainText("true");
     await expect(cfgGraph).toContainText("false");
     await expect(cfgGraph).not.toContainText("IfStmt");
+
+    await page.getByRole("radio", { name: "CDG" }).check();
+    await expect(page.getByText("CDG graph")).toBeVisible();
+    await expect(
+        page.getByText("Enter C++ code and select Build CDG"),
+    ).toBeVisible();
+    await expect(cfgGraph).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Build CDG" }).click();
+    const cdgGraph = page.getByTestId("analysis-graph");
+    await expect(cdgGraph).toContainText("choose");
+    await expect(cdgGraph).toContainText("Entry");
+    await expect(cdgGraph).toContainText("Exit");
+    await expect(cdgGraph).toContainText("true");
+    await expect(cdgGraph).toContainText("false");
 });
 
-for (const kind of ["AST", "CFG"] as const) {
+for (const kind of ["AST", "CFG", "CDG"] as const) {
     test(`shows compiler diagnostics for invalid ${kind} source`, async ({
         page,
     }) => {
         await page.goto("/");
-        if (kind === "CFG") {
+        if (kind !== "AST") {
             await page.getByRole("radio", { name: kind }).check();
         }
         await setEditorCode(page, "int broken(");

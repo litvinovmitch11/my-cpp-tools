@@ -145,7 +145,7 @@ unresolved direct labels, and internal CFG invariant violations.
 
 ## Test coverage
 
-Every source in `cpp/examples` is passed through both the AST and CFG pipelines.
+Every source in `cpp/examples` is passed through the AST, CFG, and CDG pipelines.
 Golden tests compare deterministic DOT byte for byte. Together the corpus
 covers linear code, declarations, expression forms, branches, short-circuiting,
 all loop forms, switch fallthrough, direct and indirect goto, labels, local

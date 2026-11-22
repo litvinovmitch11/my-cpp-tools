@@ -11,6 +11,7 @@ type Kind string
 const (
 	AST                   Kind = "ast"
 	CFG                   Kind = "cfg"
+	CDG                   Kind = "cdg"
 	InvalidSourceExitCode      = 2
 )
 
@@ -34,7 +35,7 @@ func (e *SourceError) Error() string {
 
 func (k Kind) Validate() error {
 	switch k {
-	case AST, CFG:
+	case AST, CFG, CDG:
 		return nil
 	default:
 		return fmt.Errorf("unsupported analysis kind %q", k)

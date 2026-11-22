@@ -108,6 +108,7 @@ target_link_libraries(mycpptools_presentation
     PUBLIC
         mycpptools::ast
         mycpptools::cfg
+        mycpptools::cdg
     PRIVATE
         mycpptools::dot
 )
@@ -123,6 +124,7 @@ if(BUILD_TESTING)
         TARGETS
             AstPrinter
             CfgPrinter
+            CdgPrinter
             directed_graph_test
             ast_graph_test
             cfg_graph_test

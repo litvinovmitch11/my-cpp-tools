@@ -30,7 +30,7 @@ When adding or changing Supported behavior:
 2. Add or update a focused unit test that asserts nodes, edges, ordering,
    reachability, or the typed error rather than only a DOT string.
 3. If Clang mapping or the native tool path is involved, add the construct to
-   `cpp/examples` and review both AST and CFG goldens.
+   `cpp/examples` and review the AST, CFG, and CDG goldens.
 4. For a bug, make the regression fail before the fix when practical.
 5. Keep the support matrix in `docs/analysis-support.md` consistent.
 

@@ -158,12 +158,13 @@ jobs:
             -DCMAKE_CXX_COMPILER=clang++-22 \
             -DLLVM_DIR=/usr/lib/llvm-22/lib/cmake/llvm \
             -DClang_DIR=/usr/lib/llvm-22/lib/cmake/clang
-          cmake --build cpp/build --target AstPrinter CfgPrinter --parallel
+          cmake --build cpp/build --target AstPrinter CfgPrinter CdgPrinter --parallel
       - name: Test the Go and native boundary
         working-directory: backend
         env:
           AST_PRINTER_PATH: ${{ github.workspace }}/cpp/build/src/tools/AstPrinter/AstPrinter
           CFG_PRINTER_PATH: ${{ github.workspace }}/cpp/build/src/tools/CfgPrinter/CfgPrinter
+          CDG_PRINTER_PATH: ${{ github.workspace }}/cpp/build/src/tools/CdgPrinter/CdgPrinter
         run: go test ./internal/api -run Integration -count=1
 
   e2e:

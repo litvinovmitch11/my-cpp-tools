@@ -21,6 +21,7 @@ const (
 	healthPath   = "/healthz"
 	astPath      = "/api/v1/ast"
 	cfgPath      = "/api/v1/cfg"
+	cdgPath      = "/api/v1/cdg"
 )
 
 type graphRequest struct {
@@ -51,6 +52,7 @@ func NewRouter(builder analysis.Builder) http.Handler {
 	router.Get(healthPath, health)
 	router.Post(astPath, buildGraph(analysis.AST, builder))
 	router.Post(cfgPath, buildGraph(analysis.CFG, builder))
+	router.Post(cdgPath, buildGraph(analysis.CDG, builder))
 	router.NotFound(notFound)
 	router.MethodNotAllowed(methodNotAllowed)
 	return router
@@ -68,7 +70,7 @@ func methodNotAllowed(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case healthPath:
 		w.Header().Set("Allow", http.MethodGet)
-	case astPath, cfgPath:
+	case astPath, cfgPath, cdgPath:
 		w.Header().Set("Allow", http.MethodPost)
 	}
 	writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", "")

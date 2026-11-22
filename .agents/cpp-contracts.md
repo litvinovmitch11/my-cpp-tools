@@ -110,14 +110,15 @@ coverage reference.
 - CDG edges retain the controlling CFG edge ID, kind, and label. Exceptional,
   indirect, assembly, fallthrough, suspend, and resume edges participate in
   the same project-owned algorithm.
-- Keep `CdgPrinter` neutral until deterministic CDG presentation is designed.
+- CDG DOT presents every model node, labels edges by their controlling CFG
+  branch, and distinguishes exceptional control visually.
 
 See [`docs/cfg-model.md`](../docs/cfg-model.md) for the public semantic and
 coverage reference.
 
 ## Native tool process contract
 
-- `AstPrinter` and `CfgPrinter` write complete DOT only on success.
+- `AstPrinter`, `CfgPrinter`, and `CdgPrinter` write complete DOT only on success.
 - Exit code `0` means success, `2` means Clang rejected the submitted source,
   and every other non-zero outcome is an internal tool or analysis failure.
 - `buildFunctionAstGraphs` distinguishes invalid source from a project AST

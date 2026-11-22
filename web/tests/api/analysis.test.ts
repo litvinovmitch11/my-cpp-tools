@@ -7,6 +7,7 @@ describe("buildAnalysisGraph", () => {
     it.each([
         ["ast", "/api/v1/ast", "digraph AST {}"],
         ["cfg", "/api/v1/cfg", "digraph CFG {}"],
+        ["cdg", "/api/v1/cdg", "digraph CDG {}"],
     ] as const)(
         "returns DOT from a successful %s response",
         async (kind, path, dot) => {
@@ -26,7 +27,7 @@ describe("buildAnalysisGraph", () => {
         },
     );
 
-    it.each(["ast", "cfg"] as const)(
+    it.each(["ast", "cfg", "cdg"] as const)(
         "preserves a structured %s backend error",
         async (kind) => {
             vi.stubGlobal(

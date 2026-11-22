@@ -29,6 +29,7 @@ func RunServer() error {
 	analysisRunner, err := runner.New(runner.BinaryPaths{
 		AST: cfg.ASTPrinter,
 		CFG: cfg.CFGPrinter,
+		CDG: cfg.CDGPrinter,
 	}, runner.Options{
 		Timeout:       cfg.RunnerTimeout,
 		MaxConcurrent: cfg.MaxConcurrent,

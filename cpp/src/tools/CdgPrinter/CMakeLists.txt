@@ -3,3 +3,12 @@ add_executable(CdgPrinter
 )
 
 mycpptools_configure_target(CdgPrinter)
+mycpptools_configure_clang_target(CdgPrinter)
+
+target_link_libraries(CdgPrinter PRIVATE
+    mycpptools::clang_ast
+    mycpptools::cfg
+    mycpptools::cdg
+    mycpptools::presentation
+    clangTooling
+)
