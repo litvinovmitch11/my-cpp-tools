@@ -5,12 +5,12 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 `my-cpp-tools` turns C++ source code into interactive program-analysis graphs.
-The alpha release provides complete AST and CFG browser pipelines: edit C++,
+The local product provides complete AST and CFG browser pipelines: edit C++,
 select an analysis, run the Clang-backed project tools through the local Go API,
 and inspect the result as an interactive graph.
 
 > [!WARNING]
-> The alpha backend is local-only and must not be exposed to untrusted
+> The backend is local-only and must not be exposed to untrusted
 > networks. Clang runs as a native process and is not isolated by a container
 > or OS sandbox.
 
@@ -38,9 +38,9 @@ The monorepo has three components:
 - `web/` contains the React/TypeScript editor and Graphviz visualization.
 
 The browser exposes AST and CFG. `CfgPrinter` builds CFG manually from the
-project-owned AST. CDG remains outside the browser alpha scope and will be built
-manually from that CFG. The project does not use `clang::CFG`, LLVM analysis
-passes, or third-party CFG/CDG builders.
+project-owned AST. CDG remains outside the current browser scope and will be
+built manually from that CFG. The project does not use `clang::CFG`, LLVM
+analysis passes, or third-party CFG/CDG builders.
 
 See [AST graph model and coverage](docs/ast-model.md) for the exact function
 selection rules, node and edge categories, tested constructs, and known gaps.
@@ -77,9 +77,13 @@ Open `http://127.0.0.1:5173`. `make dev` builds `AstPrinter` and `CfgPrinter`,
 starts the Go API on `127.0.0.1:8080`, starts Vite, and stops all processes
 together. Use
 <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> to build a graph.
+For a multi-function result, double-click a function graph to focus it and
+press <kbd>Escape</kbd> or select **Fit** to restore the complete view.
 
 Configuration is environment-based. See [`.env.example`](.env.example) for all
-supported local settings; it contains no secrets.
+supported local settings; it contains no secrets. `HTTP_ADDRESS` accepts only
+`localhost` or a numeric loopback address with a numeric port; startup rejects
+wildcard, LAN, and public bindings.
 
 ## Build and test
 
@@ -232,12 +236,9 @@ a timeout, and bounded concurrency. These controls reduce accidental resource
 use but are not a security sandbox. Do not run the service outside a trusted
 local development environment.
 
-## Roadmap
+## Next steps
 
-- `v0.1` alpha: reliable AST pipeline, repository automation, and quality gates;
-- expose the backend CFG endpoint through the web client;
 - manual CDG construction from the project-owned CFG;
-- additional graph interactions and incremental analysis;
 - sandboxed packaging and deployment only after explicit isolation work.
 
 Contributor automation should read the project constraints in

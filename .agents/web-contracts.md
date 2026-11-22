@@ -45,6 +45,9 @@ shapes, and edge roles.
   selected analysis kind.
 - `Ctrl`/`Command` + `Enter` builds the selected kind when the application is
   ready.
+- Double-clicking a function region focuses that graph without removing other
+  functions from the sanitized SVG. `Escape` and Fit restore the complete
+  view. The function selector remains the keyboard-accessible equivalent.
 - Existing keyboard editing, zoom, fit, focus, status announcements, and
   accessible labels remain available for both graph kinds.
 - Worker initialization failure remains recoverable without reloading the

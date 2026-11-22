@@ -133,6 +133,26 @@ body,
     background: var(--bg-app);
 }
 
+.editor-loading {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    place-items: center;
+    color: var(--fg-dim);
+    background: var(--bg-app);
+}
+
+.editor-host .monaco-editor .find-widget {
+    right: 4px !important;
+    width: min(411px, calc(100% - 8px)) !important;
+    max-width: calc(100% - 8px) !important;
+}
+
+.editor-host .context-view:has(.monaco-hover.compact),
+.editor-host .context-view:has(.monaco-hover.compact) * {
+    pointer-events: none !important;
+}
+
 ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -233,6 +253,10 @@ body,
     overflow: auto;
 }
 
+.pane-body.editor-host {
+    overflow: visible;
+}
+
 .toolbar button {
     background: var(--bg-panel);
     color: var(--fg);
@@ -256,7 +280,8 @@ body,
 }
 
 .graph-view {
-    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     width: 100%;
     height: 100%;
     background: var(--bg-app);
@@ -268,11 +293,20 @@ body,
 }
 
 .error-panel {
-    min-height: 100%;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     padding: 16px;
     color: #f48771;
     background: var(--bg-app);
     overflow: auto;
+    font-size: var(--diagnostics-font-size, 13px);
+    outline: none;
+}
+
+.error-panel:focus-visible {
+    outline: 1px solid var(--fg-accent);
+    outline-offset: -1px;
 }
 
 .error-panel strong {
@@ -285,12 +319,12 @@ body,
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: inherit;
 }
 
 .graph-viewport {
     width: 100%;
-    height: 100%;
+    min-height: 0;
     padding: 12px;
     overflow: auto;
     overscroll-behavior: contain;
@@ -315,18 +349,15 @@ body,
 }
 
 .graph-controls {
-    position: absolute;
-    z-index: 1;
-    top: 8px;
-    right: 18px;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 4px;
-    padding: 4px;
-    border: 1px solid var(--border);
-    border-radius: 3px;
-    background: color-mix(in srgb, var(--bg-toolbar) 92%, transparent);
-    box-shadow: 0 2px 8px rgb(0 0 0 / 30%);
+    min-width: 0;
+    padding: 4px 12px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    background: var(--bg-toolbar);
 }
 
 .graph-controls button {
@@ -361,6 +392,19 @@ body,
 
 .graph-controls .graph-fit-button {
     min-width: 58px;
+}
+
+.graph-focus-select {
+    flex: 0 1 240px;
+    width: min(240px, 28vw);
+    min-width: 120px;
+    height: 22px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--fg);
+    background: var(--bg-panel);
+    font-family: var(--font-mono);
+    font-size: 10px;
 }
 
 .graph-empty {

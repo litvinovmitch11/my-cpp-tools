@@ -2,10 +2,39 @@
 
 #include "support/test_support.hpp"
 
+#include <cstddef>
+#include <cstdlib>
+#include <new>
 #include <stdexcept>
 #include <string>
 
 using Graph = mycpptools::graph::DirectedGraph<std::string, int>;
+
+static std::ptrdiff_t AllocationsBeforeFailure = -1;
+
+static void failAllocationAfter(std::ptrdiff_t SuccessfulAllocations) {
+  AllocationsBeforeFailure = SuccessfulAllocations;
+}
+
+static void disableAllocationFailure() { AllocationsBeforeFailure = -1; }
+
+void *operator new(std::size_t Size) {
+  if (AllocationsBeforeFailure >= 0) {
+    if (AllocationsBeforeFailure == 0) {
+      disableAllocationFailure();
+      throw std::bad_alloc();
+    }
+    --AllocationsBeforeFailure;
+  }
+
+  if (void *Memory = std::malloc(Size))
+    return Memory;
+  throw std::bad_alloc();
+}
+
+void operator delete(void *Memory) noexcept { std::free(Memory); }
+
+void operator delete(void *Memory, std::size_t) noexcept { std::free(Memory); }
 
 static void preservesInsertionOrderAndAdjacency() {
   Graph Graph;
@@ -55,11 +84,55 @@ static void startsEmpty() {
   MYCPPTOOLS_EXPECT_EQ(Graph.edgeCount(), 0U);
 }
 
+static void rollsBackNodeInsertionAfterAllocationFailures() {
+  for (std::ptrdiff_t FailurePoint = 0; FailurePoint < 3; ++FailurePoint) {
+    Graph Candidate;
+    bool Threw = false;
+    failAllocationAfter(FailurePoint);
+    try {
+      (void)Candidate.addNode("node");
+    } catch (const std::bad_alloc &) {
+      Threw = true;
+    }
+    disableAllocationFailure();
+
+    MYCPPTOOLS_EXPECT_TRUE(Threw);
+    MYCPPTOOLS_EXPECT_TRUE(Candidate.empty());
+    MYCPPTOOLS_EXPECT_EQ(Candidate.nodeCount(), 0U);
+    MYCPPTOOLS_EXPECT_EQ(Candidate.edgeCount(), 0U);
+  }
+}
+
+static void rollsBackEdgeInsertionAfterAllocationFailures() {
+  for (std::ptrdiff_t FailurePoint = 0; FailurePoint < 3; ++FailurePoint) {
+    Graph Candidate;
+    const Graph::NodeId Source = Candidate.addNode("source");
+    const Graph::NodeId Target = Candidate.addNode("target");
+    bool Threw = false;
+    failAllocationAfter(FailurePoint);
+    try {
+      (void)Candidate.addEdge(Source, Target, 7);
+    } catch (const std::bad_alloc &) {
+      Threw = true;
+    }
+    disableAllocationFailure();
+
+    MYCPPTOOLS_EXPECT_TRUE(Threw);
+    MYCPPTOOLS_EXPECT_EQ(Candidate.edgeCount(), 0U);
+    MYCPPTOOLS_EXPECT_TRUE(Candidate.outgoingEdges(Source).empty());
+    MYCPPTOOLS_EXPECT_TRUE(Candidate.incomingEdges(Target).empty());
+  }
+}
+
 int main() {
   return mycpptools::test::runTests({
       {"preserves insertion order and adjacency",
        preservesInsertionOrderAndAdjacency},
       {"rejects unknown IDs", rejectsUnknownIds},
       {"starts empty", startsEmpty},
+      {"rolls back node insertion after allocation failures",
+       rollsBackNodeInsertionAfterAllocationFailures},
+      {"rolls back edge insertion after allocation failures",
+       rollsBackEdgeInsertionAfterAllocationFailures},
   });
 }
