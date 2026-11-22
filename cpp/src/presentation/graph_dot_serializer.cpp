@@ -105,6 +105,12 @@ enum class AstNodeCategory {
          std::to_string(Node.value());
 }
 
+[[nodiscard]] static std::string nodeId(std::size_t FunctionIndex,
+                                        cdg::CdgNodeId Node) {
+  return "f" + std::to_string(FunctionIndex) + "_n" +
+         std::to_string(Node.value());
+}
+
 [[nodiscard]] static dot::DotAttributes
 cfgNodeAttributes(const DotPalette &Palette, const cfg::CfgNode &Node,
                   bool Reachable) {
@@ -160,6 +166,64 @@ cfgEdgeAttributes(const cfg::CfgEdge &Edge, bool Reachable,
   else if (Edge.Kind != cfg::CfgEdgeKind::Flow)
     Attributes.push_back({"label", std::string(cfg::toString(Edge.Kind))});
   if (!Reachable) {
+    Attributes.push_back({"style", "dashed"});
+    Attributes.push_back({"color", Palette.MutedTextColor});
+  }
+  return Attributes;
+}
+
+[[nodiscard]] static dot::DotAttributes
+cdgNodeAttributes(const DotPalette &Palette, const cdg::CdgNode &Node) {
+  dot::DotAttributes Attributes{{"label", Node.Display.Label}};
+  switch (Node.Kind) {
+  case cdg::CdgNodeKind::Entry:
+  case cdg::CdgNodeKind::Exit:
+    Attributes.push_back({"shape", "oval"});
+    Attributes.push_back({"style", "filled"});
+    Attributes.push_back({"fillcolor", Palette.PrimaryNodeColor});
+    break;
+  case cdg::CdgNodeKind::Operation:
+    Attributes.push_back({"fillcolor", Palette.PrimaryNodeColor});
+    break;
+  case cdg::CdgNodeKind::Predicate:
+    Attributes.push_back({"shape", "diamond"});
+    Attributes.push_back({"style", "filled"});
+    Attributes.push_back({"fillcolor", Palette.SecondaryNodeColor});
+    break;
+  case cdg::CdgNodeKind::Transfer:
+    Attributes.push_back({"fillcolor", Palette.AccentNodeColor});
+    break;
+  case cdg::CdgNodeKind::Anchor:
+    Attributes.push_back({"shape", "ellipse"});
+    Attributes.push_back({"style", "filled"});
+    Attributes.push_back({"fillcolor", Palette.BackgroundColor});
+    break;
+  }
+
+  if (!Node.Metadata.ReachableFromEntry) {
+    bool ReplacedStyle = false;
+    for (dot::DotAttribute &Attribute : Attributes) {
+      if (Attribute.Name == "style") {
+        Attribute.Value = "dashed,filled";
+        ReplacedStyle = true;
+        break;
+      }
+    }
+    if (!ReplacedStyle)
+      Attributes.push_back({"style", "dashed,filled"});
+    Attributes.push_back({"color", Palette.MutedTextColor});
+    Attributes.push_back({"fontcolor", Palette.MutedTextColor});
+  }
+  return Attributes;
+}
+
+[[nodiscard]] static dot::DotAttributes
+cdgEdgeAttributes(const cdg::CdgEdge &Edge, const DotPalette &Palette) {
+  dot::DotAttributes Attributes{{
+      "label",
+      Edge.Label.value_or(std::string(cfg::toString(Edge.ControllingBranch))),
+  }};
+  if (Edge.Kind == cdg::CdgEdgeKind::ExceptionalControl) {
     Attributes.push_back({"style", "dashed"});
     Attributes.push_back({"color", Palette.MutedTextColor});
   }
@@ -256,6 +320,34 @@ static void writeFunctionGraph(dot::DotWriter &Writer,
   Writer.endSubgraph();
 }
 
+static void writeFunctionGraph(dot::DotWriter &Writer,
+                               const DotPalette &Palette,
+                               const cdg::FunctionCdgGraph &FunctionGraph,
+                               std::size_t FunctionIndex) {
+  Writer.beginSubgraph(clusterId(FunctionIndex));
+  const source::FunctionInfo &Function = FunctionGraph.function();
+  Writer.writeAttribute("label",
+                        Function.QualifiedName + " : " + Function.Signature);
+  Writer.writeAttribute("color", Palette.BorderColor);
+  Writer.writeAttribute("fontcolor", Palette.MutedTextColor);
+  Writer.writeAttribute("style", "rounded");
+  Writer.writeAttribute("margin", "12");
+
+  const cdg::CdgGraph &Graph = FunctionGraph.graph();
+  for (const cdg::CdgGraph::Node &Node : Graph.nodes()) {
+    Writer.writeNode(nodeId(FunctionIndex, Node.Id),
+                     cdgNodeAttributes(Palette, Node.Payload));
+  }
+
+  for (const cdg::CdgGraph::Edge &Edge : Graph.edges()) {
+    Writer.writeEdge(nodeId(FunctionIndex, Edge.Source),
+                     nodeId(FunctionIndex, Edge.Target),
+                     cdgEdgeAttributes(Edge.Payload, Palette));
+  }
+
+  Writer.endSubgraph();
+}
+
 DotPalette makeDarkDotPalette() {
   return DotPalette{
       "transparent", "#F3F4F6", "#D4D4D4", "#4B5563",
@@ -284,6 +376,18 @@ bool GraphDotSerializer::writeAst(
 bool GraphDotSerializer::writeCfg(
     std::ostream &Output, const cfg::FunctionCfgGraphs &FunctionGraphs) const {
   dot::DotWriter Writer(Output, "CFG");
+  writeDefaults(Writer, Palette);
+
+  for (std::size_t Index = 0; Index < FunctionGraphs.size(); ++Index)
+    writeFunctionGraph(Writer, Palette, FunctionGraphs[Index], Index);
+
+  Writer.finish();
+  return Writer.good();
+}
+
+bool GraphDotSerializer::writeCdg(
+    std::ostream &Output, const cdg::FunctionCdgGraphs &FunctionGraphs) const {
+  dot::DotWriter Writer(Output, "CDG");
   writeDefaults(Writer, Palette);
 
   for (std::size_t Index = 0; Index < FunctionGraphs.size(); ++Index)

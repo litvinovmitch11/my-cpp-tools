@@ -91,6 +91,7 @@ set_tests_properties(unit.clang_ast_builder PROPERTIES
 
 add_custom_target(update-ast-goldens)
 add_custom_target(update-cfg-goldens)
+add_custom_target(update-cdg-goldens)
 
 set(MYCPPTOOLS_EXAMPLES
     basic
@@ -196,9 +197,51 @@ function(mycpptools_add_cfg_golden_test example_name)
     add_dependencies(update-cfg-goldens "${update_target}")
 endfunction()
 
+function(mycpptools_add_cdg_golden_test example_name)
+    set(source_file
+        "${PROJECT_SOURCE_DIR}/examples/${example_name}.cpp"
+    )
+    set(expected_file
+        "${CMAKE_CURRENT_SOURCE_DIR}/golden/cdg/${example_name}.dot"
+    )
+    set(actual_file
+        "${CMAKE_CURRENT_BINARY_DIR}/golden/cdg/${example_name}.dot"
+    )
+
+    add_test(
+        NAME "cdg.golden.${example_name}"
+        COMMAND "${CMAKE_COMMAND}"
+            "-DCDG_PRINTER=$<TARGET_FILE:CdgPrinter>"
+            "-DSOURCE_FILE=${source_file}"
+            "-DEXPECTED_FILE=${expected_file}"
+            "-DACTUAL_FILE=${actual_file}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_cdg_golden_test.cmake"
+    )
+    set_tests_properties("cdg.golden.${example_name}" PROPERTIES
+        TIMEOUT 20
+        LABELS "integration;golden;cdg"
+    )
+
+    set(update_target "update-cdg-golden-${example_name}")
+    add_custom_target("${update_target}"
+        COMMAND "${CMAKE_COMMAND}"
+            "-DCDG_PRINTER=$<TARGET_FILE:CdgPrinter>"
+            "-DSOURCE_FILE=${source_file}"
+            "-DEXPECTED_FILE=${expected_file}"
+            "-DACTUAL_FILE=${actual_file}"
+            -DUPDATE_GOLDEN=ON
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/run_cdg_golden_test.cmake"
+        DEPENDS CdgPrinter
+        COMMENT "Updating CDG golden: ${example_name}"
+        VERBATIM
+    )
+    add_dependencies(update-cdg-goldens "${update_target}")
+endfunction()
+
 foreach(example_name IN LISTS MYCPPTOOLS_EXAMPLES)
     mycpptools_add_ast_golden_test("${example_name}")
     mycpptools_add_cfg_golden_test("${example_name}")
+    mycpptools_add_cdg_golden_test("${example_name}")
 endforeach()
 
 add_test(
@@ -212,6 +255,19 @@ add_test(
 set_tests_properties(cfg.invalid_source PROPERTIES
     TIMEOUT 20
     LABELS "integration;negative;cfg"
+)
+
+add_test(
+    NAME cdg.invalid_source
+    COMMAND "${CMAKE_COMMAND}"
+        "-DCDG_PRINTER=$<TARGET_FILE:CdgPrinter>"
+        "-DSOURCE_FILE=${CMAKE_CURRENT_SOURCE_DIR}/fixtures/ast/invalid.cpp"
+        "-DEXPECTED_DIAGNOSTIC=error:"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/run_cdg_failure_test.cmake"
+)
+set_tests_properties(cdg.invalid_source PROPERTIES
+    TIMEOUT 20
+    LABELS "integration;negative;cdg"
 )
 
 add_test(

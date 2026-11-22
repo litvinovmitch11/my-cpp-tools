@@ -98,6 +98,11 @@ export function App() {
                         selectedKind={kind}
                         onSelect={selectKind}
                     />
+                    <AnalysisOption
+                        kind="cdg"
+                        selectedKind={kind}
+                        onSelect={selectKind}
+                    />
                 </fieldset>
                 <button
                     className="primary"

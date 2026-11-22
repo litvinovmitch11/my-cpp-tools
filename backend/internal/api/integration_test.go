@@ -21,6 +21,7 @@ func TestGraphEndpointsIntegration(t *testing.T) {
 	}{
 		{name: "AST", path: "/api/v1/ast", graphName: "AST"},
 		{name: "CFG", path: "/api/v1/cfg", graphName: "CFG"},
+		{name: "CDG", path: "/api/v1/cdg", graphName: "CDG"},
 	}
 
 	for _, test := range tests {
@@ -60,6 +61,7 @@ func TestGraphEndpointsRejectInvalidSourceIntegration(t *testing.T) {
 	}{
 		{name: "AST", path: "/api/v1/ast"},
 		{name: "CFG", path: "/api/v1/cfg"},
+		{name: "CDG", path: "/api/v1/cdg"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -82,10 +84,11 @@ func newNativeIntegrationHandler(t *testing.T) http.Handler {
 	t.Helper()
 	astPath := os.Getenv("AST_PRINTER_PATH")
 	cfgPath := os.Getenv("CFG_PRINTER_PATH")
-	if astPath == "" || cfgPath == "" {
-		t.Skip("AST_PRINTER_PATH and CFG_PRINTER_PATH are required")
+	cdgPath := os.Getenv("CDG_PRINTER_PATH")
+	if astPath == "" || cfgPath == "" || cdgPath == "" {
+		t.Skip("AST_PRINTER_PATH, CFG_PRINTER_PATH, and CDG_PRINTER_PATH are required")
 	}
-	analysisRunner, err := runner.New(runner.BinaryPaths{AST: astPath, CFG: cfgPath}, runner.Options{
+	analysisRunner, err := runner.New(runner.BinaryPaths{AST: astPath, CFG: cfgPath, CDG: cdgPath}, runner.Options{
 		Timeout:       5 * time.Second,
 		MaxConcurrent: 1,
 	})

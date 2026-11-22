@@ -13,6 +13,7 @@ const (
 	defaultHTTPAddress   = "127.0.0.1:8080"
 	defaultASTPrinter    = "AstPrinter"
 	defaultCFGPrinter    = "CfgPrinter"
+	defaultCDGPrinter    = "CdgPrinter"
 	defaultRunnerTimeout = 5 * time.Second
 	defaultMaxConcurrent = 2
 )
@@ -21,6 +22,7 @@ type Config struct {
 	HTTPAddress   string
 	ASTPrinter    string
 	CFGPrinter    string
+	CDGPrinter    string
 	RunnerTimeout time.Duration
 	MaxConcurrent int
 }
@@ -30,6 +32,7 @@ func Load() (Config, error) {
 		HTTPAddress:   envOrDefault("HTTP_ADDRESS", defaultHTTPAddress),
 		ASTPrinter:    envOrDefault("AST_PRINTER_PATH", defaultASTPrinter),
 		CFGPrinter:    envOrDefault("CFG_PRINTER_PATH", defaultCFGPrinter),
+		CDGPrinter:    envOrDefault("CDG_PRINTER_PATH", defaultCDGPrinter),
 		RunnerTimeout: defaultRunnerTimeout,
 		MaxConcurrent: defaultMaxConcurrent,
 	}

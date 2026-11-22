@@ -9,6 +9,7 @@ func TestLoadUsesLoopbackAddressByDefault(t *testing.T) {
 	t.Setenv("HTTP_ADDRESS", "")
 	t.Setenv("AST_PRINTER_PATH", "")
 	t.Setenv("CFG_PRINTER_PATH", "")
+	t.Setenv("CDG_PRINTER_PATH", "")
 	t.Setenv("ANALYSIS_RUNNER_TIMEOUT", "")
 	t.Setenv("ANALYSIS_RUNNER_MAX_CONCURRENT", "")
 
@@ -22,7 +23,7 @@ func TestLoadUsesLoopbackAddressByDefault(t *testing.T) {
 	if cfg.MaxConcurrent != 2 {
 		t.Fatalf("expected default concurrency 2, got %d", cfg.MaxConcurrent)
 	}
-	if cfg.ASTPrinter != "AstPrinter" || cfg.CFGPrinter != "CfgPrinter" {
+	if cfg.ASTPrinter != "AstPrinter" || cfg.CFGPrinter != "CfgPrinter" || cfg.CDGPrinter != "CdgPrinter" {
 		t.Fatalf("unexpected default printer paths: %+v", cfg)
 	}
 }
@@ -31,6 +32,7 @@ func TestLoadReadsOverrides(t *testing.T) {
 	t.Setenv("HTTP_ADDRESS", "127.0.0.1:9090")
 	t.Setenv("AST_PRINTER_PATH", "/tmp/AstPrinter")
 	t.Setenv("CFG_PRINTER_PATH", "/tmp/CfgPrinter")
+	t.Setenv("CDG_PRINTER_PATH", "/tmp/CdgPrinter")
 	t.Setenv("ANALYSIS_RUNNER_TIMEOUT", "3s")
 	t.Setenv("ANALYSIS_RUNNER_MAX_CONCURRENT", "4")
 
@@ -38,7 +40,7 @@ func TestLoadReadsOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load config: %v", err)
 	}
-	if cfg.HTTPAddress != "127.0.0.1:9090" || cfg.ASTPrinter != "/tmp/AstPrinter" || cfg.CFGPrinter != "/tmp/CfgPrinter" {
+	if cfg.HTTPAddress != "127.0.0.1:9090" || cfg.ASTPrinter != "/tmp/AstPrinter" || cfg.CFGPrinter != "/tmp/CfgPrinter" || cfg.CDGPrinter != "/tmp/CdgPrinter" {
 		t.Fatalf("unexpected config: %+v", cfg)
 	}
 	if cfg.RunnerTimeout != 3*time.Second || cfg.MaxConcurrent != 4 {

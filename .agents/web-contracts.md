@@ -4,16 +4,16 @@
 
 The browser owns source editing, analysis selection, HTTP requests, Graphviz
 layout, sanitized SVG display, interaction, and accessibility. It does not
-parse DOT, infer AST or CFG semantics from labels or shapes, or reproduce
+parse DOT, infer analysis semantics from labels or shapes, or reproduce
 native analysis rules.
 
-The supported browser analysis kinds are a closed project-owned set: `ast` and
-`cfg`. AST remains the default. Each kind maps to its explicit versioned API
+The supported browser analysis kinds are a closed project-owned set: `ast`,
+`cfg`, and `cdg`. AST remains the default. Each kind maps to its explicit versioned API
 route; arbitrary strings must not be interpolated into API paths.
 
 ## Selection and request lifecycle
 
-- The user explicitly selects AST or CFG and explicitly starts a build.
+- The user explicitly selects AST, CFG, or CDG and explicitly starts a build.
 - Changing the selected kind does not automatically run analysis.
 - Changing the selected kind clears the previous result and error so a graph
   is never displayed under the wrong analysis label.
@@ -22,7 +22,7 @@ route; arbitrary strings must not be interpolated into API paths.
   result. Unmounting the application aborts any active request.
 - An HTTP response or Worker response belonging to an older request or render
   must never replace the current result.
-- AST and CFG share one request/error implementation because their backend
+- AST, CFG, and CDG share one request/error implementation because their backend
   envelopes are identical. Kind-specific UI wording may differ.
 
 ## Rendering and trust boundary
@@ -33,7 +33,7 @@ is inserted into the DOM. Do not add main-thread layout, unsanitized previews,
 manual DOT parsing, or DOM behavior derived from native node labels.
 
 The generic graph view receives only a layout result and presentation text. It
-does not receive an analysis kind and does not branch on AST or CFG semantics.
+does not receive an analysis kind and does not branch on analysis semantics.
 Native presentation remains the source of truth for graph labels, colors,
 shapes, and edge roles.
 
@@ -49,13 +49,13 @@ shapes, and edge roles.
   functions from the sanitized SVG. `Escape` and Fit restore the complete
   view. The function selector remains the keyboard-accessible equivalent.
 - Existing keyboard editing, zoom, fit, focus, status announcements, and
-  accessible labels remain available for both graph kinds.
+  accessible labels remain available for all graph kinds.
 - Worker initialization failure remains recoverable without reloading the
   page.
 
 ## Evidence
 
-Unit tests cover both endpoint mappings, structured errors, cancellation,
+Unit tests cover all endpoint mappings, structured errors, cancellation,
 cross-kind stale-response protection, selection behavior, dynamic labels, and
-Worker lifecycle state. Browser E2E uses the real AST and CFG native tools and
+Worker lifecycle state. Browser E2E uses the real AST, CFG, and CDG native tools and
 checks successful rendering plus compiler diagnostics.

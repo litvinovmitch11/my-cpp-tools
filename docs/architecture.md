@@ -10,28 +10,25 @@ The browser exposes both analysis pipelines through one selector and rendering
 path:
 
 ```text
-C++ source + AST/CFG selection
+C++ source + AST/CFG/CDG selection
     -> versioned Go API route
-    -> AstPrinter or CfgPrinter
-    -> AST or CFG DOT
+    -> AstPrinter, CfgPrinter, or CdgPrinter
+    -> AST, CFG, or CDG DOT
     -> Graphviz Web Worker
     -> sanitized interactive SVG
 ```
 
-The backend also exposes the native CFG pipeline:
+The backend also exposes the native CDG pipeline:
 
 ```text
-POST /api/v1/cfg
+POST /api/v1/cdg
     -> shared bounded native runner
     -> Clang AST
     -> project-owned function AST
     -> project-owned CFG
+    -> project-owned CDG
     -> DOT
 ```
-
-The native CDG model, strong post-dominator relation, and CFG-to-CDG builder
-are implemented. CDG is not yet exposed through `CdgPrinter`, the backend, or
-the browser.
 
 ## Component responsibilities
 
@@ -39,7 +36,8 @@ the browser.
 
 The C++ component adapts Clang's parser output into owning project models and
 contains all static-analysis semantics. `AstPrinter` writes an AST graph;
-`CfgPrinter` transforms the same AST model into a CFG and writes that graph.
+`CfgPrinter` transforms the same AST model into a CFG, and `CdgPrinter`
+derives and writes its control-dependence graph.
 
 Clang supplies syntax, source locations, and semantic facts. It does not supply
 the project's CFG. The implementation does not use `clang::CFG`, LLVM analysis
@@ -47,15 +45,15 @@ passes, or third-party CFG/CDG builders.
 
 ### Go backend
 
-The backend exposes separate versioned AST and CFG routes, validates requests,
+The backend exposes separate versioned AST, CFG, and CDG routes, validates requests,
 manages one shared bounded pool of native processes, and maps failures to safe
-errors. It does not recreate AST or CFG algorithms and never compiles or
+errors. It does not recreate native analysis algorithms and never compiles or
 executes submitted programs. Native exit codes distinguish rejected source
 from internal analysis failures.
 
 ### Web client
 
-The browser provides the editor, AST/CFG selection, and graph interaction.
+The browser provides the editor, AST/CFG/CDG selection, and graph interaction.
 Graphviz runs in a Web Worker, and generated SVG is sanitized before display.
 The client owns presentation and interaction, not analysis meaning.
 
@@ -80,11 +78,11 @@ graph/source -> ast -> cfg -> cdg
 
 The graph models do not depend on presentation, command-line tools, Go, or the
 browser. Clang and LLVM types stay inside the adapter and native tool entry
-points; completed AST and CFG objects own ordinary project values.
+points; completed AST, CFG, and CDG objects own ordinary project values.
 
 ## Graph and ownership design
 
-`DirectedGraph` is reusable storage. AST and CFG use it with different node and
+`DirectedGraph` is reusable storage. AST, CFG, and CDG use it with different node and
 edge payloads, but they are not subclasses of one another: they describe
 different domains and have different invariants.
 
@@ -122,8 +120,7 @@ part of the model. See [CDG model and semantics](cdg-model.md).
 ## Deliberate limits
 
 - Analysis is currently function-local and intraprocedural.
-- The browser and API expose AST and CFG.
-- CDG has no DOT, CLI, backend, or browser integration yet.
+- The browser and API expose AST, CFG, and CDG.
 - The CFG is source-oriented: it does not expand implicit destruction,
   temporary cleanup, complete exception type matching, or compiler coroutine
   lowering.
@@ -133,8 +130,8 @@ part of the model. See [CDG model and semantics](cdg-model.md).
 
 ## Next stages
 
-1. Add deterministic CDG presentation, `CdgPrinter`, backend routing, and
-   browser integration on top of the native CDG contract.
+1. Refine CDG-specific presentation and interaction without moving analysis
+   semantics into the browser.
 2. Consider public deployment only after explicit process, filesystem, CPU,
    memory, and concurrency isolation.
 

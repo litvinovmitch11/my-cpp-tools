@@ -1,4 +1,4 @@
-export const analysisKinds = ["ast", "cfg"] as const;
+export const analysisKinds = ["ast", "cfg", "cdg"] as const;
 
 export type AnalysisKind = (typeof analysisKinds)[number];
 
@@ -17,6 +17,7 @@ type GraphResponse = {
 const analysisPaths: Record<AnalysisKind, string> = {
     ast: "/api/v1/ast",
     cfg: "/api/v1/cfg",
+    cdg: "/api/v1/cdg",
 };
 
 export class AnalysisApiError extends Error {

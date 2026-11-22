@@ -28,6 +28,7 @@ func TestBuildGraphRoutesKinds(t *testing.T) {
 	}{
 		{name: "AST", path: "/api/v1/ast", kind: analysis.AST, dot: "digraph AST {}"},
 		{name: "CFG", path: "/api/v1/cfg", kind: analysis.CFG, dot: "digraph CFG {}"},
+		{name: "CDG", path: "/api/v1/cdg", kind: analysis.CDG, dot: "digraph CDG {}"},
 	}
 
 	for _, test := range tests {
@@ -91,6 +92,7 @@ func TestBuildGraphAcceptsSourceAtLimitForEveryKind(t *testing.T) {
 	}{
 		{name: "AST", path: astPath, kind: analysis.AST},
 		{name: "CFG", path: cfgPath, kind: analysis.CFG},
+		{name: "CDG", path: cdgPath, kind: analysis.CDG},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -228,6 +230,7 @@ func TestBuildGraphMapsErrorsForEveryKind(t *testing.T) {
 	}{
 		{name: "AST", path: "/api/v1/ast", kind: analysis.AST},
 		{name: "CFG", path: "/api/v1/cfg", kind: analysis.CFG},
+		{name: "CDG", path: "/api/v1/cdg", kind: analysis.CDG},
 	}
 
 	for _, kind := range kinds {
@@ -277,7 +280,7 @@ func TestUnknownRouteReturnsJSONNotFound(t *testing.T) {
 		t.Fatal("builder must not be called")
 		return "", nil
 	})
-	request := httptest.NewRequest(http.MethodPost, "/api/v1/cdg", strings.NewReader(`{"code":"int main() {}"}`))
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/pdg", strings.NewReader(`{"code":"int main() {}"}`))
 	request.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 	NewRouter(builder).ServeHTTP(response, request)
@@ -299,6 +302,7 @@ func TestRoutesRejectUnsupportedMethods(t *testing.T) {
 		{name: "health", method: http.MethodPost, path: healthPath, allow: http.MethodGet},
 		{name: "AST", method: http.MethodGet, path: astPath, allow: http.MethodPost},
 		{name: "CFG", method: http.MethodDelete, path: cfgPath, allow: http.MethodPost},
+		{name: "CDG", method: http.MethodPatch, path: cdgPath, allow: http.MethodPost},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

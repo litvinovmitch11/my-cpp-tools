@@ -5,7 +5,7 @@
 The Go backend validates versioned HTTP requests, runs native analysis tools
 under common resource bounds, and maps native outcomes to safe API errors. It
 does not parse C++ itself, reconstruct graph semantics, inspect DOT contents,
-or duplicate AST and CFG algorithms.
+or duplicate native analysis algorithms.
 
 The backend invokes project tools only to parse and analyze submitted source.
 It never compiles submitted source into an executable and never runs submitted
@@ -17,9 +17,10 @@ the service remains loopback-only.
 The v1 graph endpoints are explicit:
 
 - `POST /api/v1/ast` builds an AST DOT graph;
-- `POST /api/v1/cfg` builds a CFG DOT graph.
+- `POST /api/v1/cfg` builds a CFG DOT graph;
+- `POST /api/v1/cdg` builds a CDG DOT graph.
 
-Both accept the same `{ "code": string }` request and return the same
+All three accept the same `{ "code": string }` request and return the same
 `{ "dot": string }` success envelope. They share request validation and safe
 error mapping, but remain separate routes so graph types can evolve without a
 request discriminator or a breaking change to the existing AST client.
@@ -33,8 +34,8 @@ the standard `Allow` response header.
 ## Analysis orchestration
 
 The backend domain exposes an explicit closed set of analysis kinds and one
-builder operation. A single runner owns the validated paths to `AstPrinter` and
-`CfgPrinter`, a shared timeout, shared output and diagnostic limits, and one
+builder operation. A single runner owns the validated paths to `AstPrinter`,
+`CfgPrinter`, and `CdgPrinter`, a shared timeout, shared output and diagnostic limits, and one
 shared concurrency pool. Adding another executable must not multiply the total
 number of native processes that the service may run concurrently.
 
@@ -86,20 +87,19 @@ Every request completion is logged with request ID, method, path, status,
 response size, and duration. Analysis failures add the analysis kind and safe
 internal error. Submitted source and compiler diagnostics are never logged.
 
-## CFG backend milestone
+## Graph backend milestone
 
-The backend CFG MR is complete only when:
+The graph backend is complete only when:
 
 1. the existing AST API remains compatible;
-2. `/api/v1/cfg` returns DOT produced by the project `CfgPrinter`;
-3. AST and CFG use one generic handler and one bounded runner without copied
+2. each route returns DOT produced by its project native tool;
+3. AST, CFG, and CDG use one generic handler and one bounded runner without copied
    orchestration logic;
 4. the native exit contract distinguishes invalid source from an internal CFG
    failure;
-5. unit tests cover both kinds and shared cross-kind capacity;
-6. integration tests run both real native tools;
-7. CI builds both tools and makes those integration tests mandatory;
+5. unit tests cover all kinds and shared cross-kind capacity;
+6. integration tests run all real native tools;
+7. CI builds all tools and makes those integration tests mandatory;
 8. environment examples, development scripts, README, and architecture docs
    describe the new backend capability;
-9. web support is added as a separate milestone without changing this backend
-   contract.
+9. web support uses the same explicit route mapping and response contract.

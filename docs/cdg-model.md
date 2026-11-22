@@ -108,12 +108,10 @@ an individual immediate-post-dominator lookup is `O(V^2)` and is not needed by
 CDG construction. The API can later preserve the same semantics behind a more
 compact relation representation if profiling proves it necessary.
 
-## Current integration boundary
+## Product integration
 
-The native model, post-dominator relation, and CFG-to-CDG builder are complete.
-The next stage is presentation and product integration:
-
-1. deterministic CDG DOT serialization;
-2. a real `CdgPrinter` composition root;
-3. bounded backend routing;
-4. browser selection, rendering, interaction, and end-to-end tests.
+`GraphDotSerializer` presents CDG nodes using the same source-oriented visual
+categories as CFG. Control edges show their originating CFG branch label or
+kind; exceptional control edges are dashed. `CdgPrinter`, `POST /api/v1/cdg`,
+and the browser selector expose the same deterministic graph through the
+shared bounded process and sanitized rendering pipelines.

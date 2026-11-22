@@ -28,6 +28,7 @@ type Runner struct {
 type BinaryPaths struct {
 	AST string
 	CFG string
+	CDG string
 }
 
 type Options struct {
@@ -62,7 +63,11 @@ func resolveBinaryPaths(paths BinaryPaths) (BinaryPaths, error) {
 	if err != nil {
 		return BinaryPaths{}, err
 	}
-	return BinaryPaths{AST: astPath, CFG: cfgPath}, nil
+	cdgPath, err := resolveBinaryPath("CDG", paths.CDG)
+	if err != nil {
+		return BinaryPaths{}, err
+	}
+	return BinaryPaths{AST: astPath, CFG: cfgPath, CDG: cdgPath}, nil
 }
 
 func resolveBinaryPath(name, binaryPath string) (string, error) {
@@ -167,6 +172,8 @@ func (r *Runner) binaryPath(kind analysis.Kind) (string, error) {
 		return r.paths.AST, nil
 	case analysis.CFG:
 		return r.paths.CFG, nil
+	case analysis.CDG:
+		return r.paths.CDG, nil
 	default:
 		return "", kind.Validate()
 	}

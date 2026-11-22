@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 `my-cpp-tools` turns C++ source code into interactive program-analysis graphs.
-The local product provides complete AST and CFG browser pipelines: edit C++,
+The local product provides complete AST, CFG, and CDG browser pipelines: edit C++,
 select an analysis, run the Clang-backed project tools through the local Go API,
 and inspect the result as an interactive graph.
 
@@ -19,10 +19,11 @@ and inspect the result as an interactive graph.
 ## Architecture
 
 ```text
-React editor + AST/CFG selector
+React editor + AST/CFG/CDG selector
               │
               ├── POST /api/v1/ast ── AstPrinter ── AST DOT ──┐
-              └── POST /api/v1/cfg ── CfgPrinter ── CFG DOT ──┤
+              ├── POST /api/v1/cfg ── CfgPrinter ── CFG DOT ──┤
+              └── POST /api/v1/cdg ── CdgPrinter ── CDG DOT ──┤
                                                               ▼
                                                       Graphviz Web Worker
                                                               │ sanitized SVG
@@ -37,10 +38,9 @@ The monorepo has three components:
 - `backend/` contains the Go API, validation, process limits, and error mapping.
 - `web/` contains the React/TypeScript editor and Graphviz visualization.
 
-The browser exposes AST and CFG. `CfgPrinter` builds CFG manually from the
-project-owned AST. The native CDG model, post-dominator relation, and builder
-derive control dependence manually from that CFG, but CDG is not yet exposed
-through a CLI, backend route, or browser mode. The project does not use
+The browser exposes AST, CFG, and CDG. `CfgPrinter` builds CFG manually from the
+project-owned AST. `CdgPrinter` derives strong control dependence manually from
+that CFG through the project-owned post-dominator relation. The project does not use
 `clang::CFG`, LLVM analysis passes, or third-party CFG/CDG builders.
 
 See [AST graph model and coverage](docs/ast-model.md) for the exact function
@@ -76,7 +76,8 @@ make bootstrap
 make dev
 ```
 
-Open `http://127.0.0.1:5173`. `make dev` builds `AstPrinter` and `CfgPrinter`,
+Open `http://127.0.0.1:5173`. `make dev` builds `AstPrinter`, `CfgPrinter`, and
+`CdgPrinter`,
 starts the Go API on `127.0.0.1:8080`, starts Vite, and stops all processes
 together. Use
 <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> to build a graph.
@@ -143,6 +144,13 @@ Run the native CFG stage in the same way:
   cpp/examples/loops.cpp -- -std=c++20
 ```
 
+Run the native CDG stage in the same way:
+
+```bash
+./cpp/build/src/tools/CdgPrinter/CdgPrinter \
+  cpp/examples/branches.cpp -- -std=c++20
+```
+
 Golden tests never modify their expected output. After an intentional graph or
 presentation change, inspect the failing diff and explicitly update the
 affected goldens with:
@@ -153,6 +161,9 @@ git diff -- cpp/tests/golden/ast
 
 cmake --build cpp/build --target update-cfg-goldens
 git diff -- cpp/tests/golden/cfg
+
+cmake --build cpp/build --target update-cdg-goldens
+git diff -- cpp/tests/golden/cdg
 ```
 
 For the complete monorepo, `make bootstrap` installs/configures dependencies,
@@ -161,7 +172,8 @@ browser-to-native pipeline.
 
 ## API
 
-`POST /api/v1/ast` and `POST /api/v1/cfg` accept the same JSON object:
+`POST /api/v1/ast`, `POST /api/v1/cfg`, and `POST /api/v1/cdg` accept the same
+JSON object:
 
 ```json
 {
@@ -193,7 +205,7 @@ Errors use a stable envelope and may include sanitized compiler diagnostics:
 }
 ```
 
-AST and CFG share source, graph, diagnostic, execution-time, and native-process
+AST, CFG, and CDG share source, graph, diagnostic, execution-time, and native-process
 concurrency limits. The process runner exposes compiler diagnostics only when a
 native tool explicitly reports invalid source; internal analysis failures use a
 generic error. `GET /healthz` is the local health endpoint.
@@ -207,7 +219,7 @@ generic error. `GET /healthz` is the local health endpoint.
 | `make lint`      | Run Go vet, clang-tidy, ESLint, and TypeScript checks                    |
 | `make test`      | Run Go race tests, CTest, and web unit tests                             |
 | `make coverage`  | Enforce Go, C++, and web coverage thresholds                             |
-| `make e2e`       | Exercise both native API routes and the AST/CFG browser pipelines         |
+| `make e2e`       | Exercise all native API routes and AST/CFG/CDG browser pipelines          |
 | `make check`     | Reproduce the non-E2E CI quality gates locally                           |
 | `make dev`       | Start the local development stack with process cleanup                   |
 
@@ -222,7 +234,7 @@ Actions:
 - repository hygiene and generated-file checks;
 - Go formatting, vet, race tests, and coverage;
 - C++ formatting, clang-tidy, build, CTest, and LLVM source coverage;
-- mandatory Go-to-native integration tests for both AST and CFG endpoints;
+- mandatory Go-to-native integration tests for AST, CFG, and CDG endpoints;
 - web formatting, lint, type checking, unit coverage, and production build;
 - a full Playwright end-to-end test after component jobs pass;
 - CodeQL, secret scanning, Go vulnerability checks, and npm audit.
@@ -241,7 +253,7 @@ local development environment.
 
 ## Next steps
 
-- CDG DOT, CLI, backend, and browser integration;
+- CDG-specific presentation and interaction refinements;
 - sandboxed packaging and deployment only after explicit isolation work.
 
 Contributor automation should read the project constraints in
