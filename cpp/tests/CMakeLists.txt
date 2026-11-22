@@ -36,6 +36,21 @@ mycpptools_add_unit_test(
     mycpptools::cfg
 )
 mycpptools_add_unit_test(
+    cdg_graph
+    unit/cdg_graph_test.cpp
+    mycpptools::cdg
+)
+mycpptools_add_unit_test(
+    post_dominators
+    unit/post_dominators_test.cpp
+    mycpptools::cdg
+)
+mycpptools_add_unit_test(
+    cdg_builder
+    unit/cdg_builder_test.cpp
+    mycpptools::cdg
+)
+mycpptools_add_unit_test(
     dot_writer
     unit/dot_writer_test.cpp
     mycpptools::dot

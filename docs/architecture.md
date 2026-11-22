@@ -29,7 +29,9 @@ POST /api/v1/cfg
     -> DOT
 ```
 
-CDG is a future stage and has no implementation yet.
+The native CDG model, strong post-dominator relation, and CFG-to-CDG builder
+are implemented. CDG is not yet exposed through `CdgPrinter`, the backend, or
+the browser.
 
 ## Component responsibilities
 
@@ -65,7 +67,7 @@ The client owns presentation and interaction, not analysis meaning.
 | `source` | Function identity and source byte ranges |
 | `ast` | Owning function AST and its invariants |
 | `cfg` | Owning CFG and the AST-to-CFG transformation |
-| `cdg` | Reserved for the future CFG-to-CDG stage |
+| `cdg` | Owning CDG, strong post-dominators, and CFG-to-CDG transformation |
 | `dot` | DOT syntax and escaping |
 | `presentation` | Graph colors, shapes, labels, and serialization |
 | `clang_ast` | The only adapter from compiler objects to project AST values |
@@ -86,9 +88,9 @@ points; completed AST and CFG objects own ordinary project values.
 edge payloads, but they are not subclasses of one another: they describe
 different domains and have different invariants.
 
-`FunctionAstGraph` and `FunctionCfgGraph` combine function information with a
-validated graph. Builders transform one owning model into another. A failed
-collection does not publish partial results.
+`FunctionAstGraph`, `FunctionCfgGraph`, and `FunctionCdgGraph` combine function
+information with a validated graph. Builders transform one owning model into
+another. A failed collection does not publish partial results.
 
 DOT generation is a separate presentation step. `GraphDotSerializer` chooses
 the visible graph policy, while the low-level writer is responsible only for
@@ -112,11 +114,16 @@ kept as an atomic operation rather than rejected. See
 [CFG graph model and coverage](cfg-model.md) for the complete contract and its
 deliberate abstractions.
 
+The native CDG retains one node per CFG node and derives strong,
+termination-sensitive control dependence. Infinite paths, no-return terminals,
+unreachable components, exceptional flow, indirect goto, and `asm goto` are
+part of the model. See [CDG model and semantics](cdg-model.md).
+
 ## Deliberate limits
 
 - Analysis is currently function-local and intraprocedural.
 - The browser and API expose AST and CFG.
-- CDG is not implemented.
+- CDG has no DOT, CLI, backend, or browser integration yet.
 - The CFG is source-oriented: it does not expand implicit destruction,
   temporary cleanup, complete exception type matching, or compiler coroutine
   lowering.
@@ -126,8 +133,8 @@ deliberate abstractions.
 
 ## Next stages
 
-1. Design and implement CDG from the project-owned CFG, including
-   post-dominators and control-dependence rules.
+1. Add deterministic CDG presentation, `CdgPrinter`, backend routing, and
+   browser integration on top of the native CDG contract.
 2. Consider public deployment only after explicit process, filesystem, CPU,
    memory, and concurrency isolation.
 

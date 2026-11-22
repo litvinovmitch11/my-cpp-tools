@@ -84,9 +84,14 @@ target_link_libraries(mycpptools_cfg PUBLIC
 
 add_library(mycpptools_cdg STATIC
     src/cdg/cdg_builder.cpp
+    src/cdg/cdg_graph.cpp
+    src/cdg/post_dominators.cpp
 )
 add_library(mycpptools::cdg ALIAS mycpptools_cdg)
 mycpptools_configure_target(mycpptools_cdg)
+target_link_libraries(mycpptools_cdg PUBLIC
+    mycpptools::cfg
+)
 
 add_library(mycpptools_dot STATIC
     src/dot/dot_writer.cpp
@@ -122,6 +127,9 @@ if(BUILD_TESTING)
             ast_graph_test
             cfg_graph_test
             cfg_builder_test
+            cdg_graph_test
+            post_dominators_test
+            cdg_builder_test
             dot_writer_test
             graph_dot_serializer_test
             function_identity_test
