@@ -1,6 +1,7 @@
 #include "clang_ast_mapper.hpp"
 
 #include "clang_ast_classifier.hpp"
+#include "function_identity.hpp"
 
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/ASTTypeTraits.h"
@@ -265,22 +266,22 @@ ClangAstMapper::makeFunctionInfo(const clang::FunctionDecl &Function) const {
   std::string Signature = Function.getType().getAsString();
 
   llvm::SmallString<128> Usr;
-  if (clang::index::generateUSRForDecl(&Function, Usr)) {
-    const clang::SourceManager &Sources = Context.getSourceManager();
-    const clang::SourceLocation Location =
-        Sources.getExpansionLoc(Function.getLocation());
-    QualifiedName += "@";
-    if (Location.isValid())
-      QualifiedName += std::to_string(Sources.getFileOffset(Location));
-    else
-      QualifiedName += "unknown";
-    Usr = QualifiedName;
-  }
+  const bool HasUsr = !clang::index::generateUSRForDecl(&Function, Usr);
+  const clang::SourceManager &Sources = Context.getSourceManager();
+  const clang::SourceLocation Location =
+      Sources.getExpansionLoc(Function.getLocation());
+  const std::optional<std::size_t> ExpansionOffset =
+      Location.isValid()
+          ? std::optional<std::size_t>(Sources.getFileOffset(Location))
+          : std::nullopt;
+  const std::string FileName =
+      Location.isValid() ? Sources.getFilename(Location).str() : std::string{};
 
-  return source::FunctionInfo{source::FunctionId(Usr.str().str()),
-                              std::move(Name), std::move(QualifiedName),
-                              std::move(Signature),
-                              sourceRange(Function.getSourceRange())};
+  return source::FunctionInfo{
+      makeFunctionId(HasUsr ? Usr.str().str() : std::string{}, QualifiedName,
+                     FileName, ExpansionOffset),
+      std::move(Name), std::move(QualifiedName), std::move(Signature),
+      sourceRange(Function.getSourceRange())};
 }
 
 std::optional<source::SourceRange>

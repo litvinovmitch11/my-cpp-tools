@@ -124,6 +124,8 @@ if(BUILD_TESTING)
             cfg_builder_test
             dot_writer_test
             graph_dot_serializer_test
+            function_identity_test
+            clang_ast_builder_test
         MINIMUM_LINE_PERCENT 60
     )
 elseif(MYCPPTOOLS_ENABLE_COVERAGE)

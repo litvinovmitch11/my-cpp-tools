@@ -108,7 +108,7 @@ npm run e2e
 - Keep GitHub Actions permissions minimal and pin third-party actions.
 - Treat Clang as a native parser of hostile input. Timeouts and output limits
   do not provide filesystem or memory isolation.
-- Keep the alpha backend loopback-only. Public deployment requires process and
+- Keep the backend loopback-only. Public deployment requires process and
   filesystem isolation, memory and CPU limits, and bounded concurrency.
 - The backend must never compile or execute submitted programs and must
   preserve request, timeout, diagnostic, output, and concurrency limits.

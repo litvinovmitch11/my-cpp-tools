@@ -215,7 +215,9 @@ metadata field.
 Unit tests check:
 
 - directed-graph IDs, insertion order, adjacency, roots, and invalid IDs;
+- directed-graph rollback when allocation fails during node or edge insertion;
 - function-AST root and tree invariants;
+- fallback function identity when Clang cannot create a USR;
 - DOT identifier validation, escaping, structure, and writer lifecycle;
 - deterministic AST presentation and output-stream failure propagation.
 
@@ -244,20 +246,10 @@ these examples:
 | `exceptions_and_labels` | `try`, `catch`, `throw`, labels, and direct `goto` |
 | `unreachable` | AST retention for statements following an unconditional transfer |
 
-An additional integration test verifies that invalid C++ produces diagnostics,
-a non-zero status, and no partial DOT output.
-
-## Known gaps
-
-The following behavior does not yet have a dedicated regression test:
-
-- macro-expanded function definitions and exact source-offset metadata;
-- multi-file `ClangTool` runs and fallback identity generation when Clang
-  cannot create a USR;
-- simulated allocation failures for the graph's exception-safety rollback.
-
-These are coverage gaps, not promises that the current output is wrong. Unknown
-or unclassified nodes are still retained under their generic project category.
+Additional integration tests verify that invalid C++ produces diagnostics, a
+non-zero status, and no partial DOT output; macro-expanded definitions use
+main-file byte offsets; and one multi-file `ClangTool` run collects every main
+input without identity collisions.
 New dedicated tests should be added before downstream analysis starts relying
 on the detailed shape of one of these constructs.
 

@@ -2,6 +2,7 @@ import { loader } from "@monaco-editor/react";
 import * as monaco from "monaco-editor/editor/editor.api";
 import "monaco-editor/features/bracketMatching/register.js";
 import "monaco-editor/features/codeEditor/register.js";
+import "monaco-editor/features/codicon/register.js";
 import "monaco-editor/features/comment/register.js";
 import "monaco-editor/features/find/register.js";
 import "monaco-editor/features/wordOperations/register.js";

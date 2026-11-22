@@ -46,6 +46,39 @@ func TestLoadReadsOverrides(t *testing.T) {
 	}
 }
 
+func TestLoadAcceptsLoopbackAddressForms(t *testing.T) {
+	for _, address := range []string{"localhost:8080", "127.0.0.2:9090", "[::1]:8080"} {
+		t.Run(address, func(t *testing.T) {
+			t.Setenv("HTTP_ADDRESS", address)
+			cfg, err := Load()
+			if err != nil {
+				t.Fatalf("load config: %v", err)
+			}
+			if cfg.HTTPAddress != address {
+				t.Fatalf("expected address %q, got %q", address, cfg.HTTPAddress)
+			}
+		})
+	}
+}
+
+func TestLoadRejectsNonLoopbackAddress(t *testing.T) {
+	for _, address := range []string{
+		"0.0.0.0:8080",
+		"[::]:8080",
+		"192.0.2.1:8080",
+		"example.com:8080",
+		"127.0.0.1",
+		"127.0.0.1:http",
+	} {
+		t.Run(address, func(t *testing.T) {
+			t.Setenv("HTTP_ADDRESS", address)
+			if _, err := Load(); err == nil {
+				t.Fatal("expected configuration error")
+			}
+		})
+	}
+}
+
 func TestLoadRejectsInvalidRunnerSettings(t *testing.T) {
 	tests := []struct {
 		name  string

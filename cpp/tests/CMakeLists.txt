@@ -46,6 +46,34 @@ mycpptools_add_unit_test(
     mycpptools::presentation
 )
 
+mycpptools_add_unit_test(
+    function_identity
+    unit/function_identity_test.cpp
+    mycpptools::clang_ast
+)
+target_include_directories(function_identity_test PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/clang"
+)
+
+add_executable(clang_ast_builder_test unit/clang_ast_builder_test.cpp)
+mycpptools_configure_target(clang_ast_builder_test)
+mycpptools_configure_clang_target(clang_ast_builder_test)
+target_include_directories(clang_ast_builder_test PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+target_compile_definitions(clang_ast_builder_test PRIVATE
+    MYCPPTOOLS_AST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures/ast"
+)
+target_link_libraries(clang_ast_builder_test PRIVATE
+    mycpptools::clang_ast
+    clangTooling
+)
+add_test(NAME unit.clang_ast_builder COMMAND clang_ast_builder_test)
+set_tests_properties(unit.clang_ast_builder PROPERTIES
+    TIMEOUT 20
+    LABELS "unit;integration;contract;ast"
+)
+
 add_custom_target(update-ast-goldens)
 add_custom_target(update-cfg-goldens)
 

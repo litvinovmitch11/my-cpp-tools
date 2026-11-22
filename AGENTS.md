@@ -10,8 +10,8 @@ three components:
 - `backend/`: Go HTTP API and bounded native-process orchestration;
 - `web/`: React/TypeScript editing and graph visualization.
 
-The current browser product exposes AST end to end. The native C++ layer also
-contains the project-owned CFG foundation. CDG is not implemented.
+The current browser product exposes AST and CFG end to end. CDG is not
+implemented.
 
 ## Required agent context
 
@@ -65,8 +65,7 @@ graph/source -> ast -> cfg -> cdg
 
 Unless a task explicitly expands scope:
 
-- keep the browser product on AST;
-- keep CFG native-only;
+- keep the browser product on AST and CFG;
 - leave CDG as a neutral placeholder;
 - do not add real-time analysis or unrelated graph types;
 - do not expose the local-only backend to untrusted networks.

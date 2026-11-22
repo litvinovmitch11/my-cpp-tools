@@ -88,7 +88,6 @@ The project currently makes no claim to provide:
 - data-flow, def-use, alias, value-range, or lifetime analysis;
 - interprocedural CFG composition or call-graph analysis;
 - complete type, template-argument, preprocessor, comment, or attribute graphs;
-- CFG through the Go API or browser interface;
 - public multi-tenant execution isolation.
 
 These require explicit designs and tests before they can move into Supported or

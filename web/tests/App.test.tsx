@@ -103,12 +103,27 @@ describe("App", () => {
         expect(editor.getAttribute("data-font-size")).toBe("15");
 
         fireEvent.click(
-            screen.getByRole("button", { name: "Increase font size" }),
+            screen.getByRole("button", {
+                name: "Increase editor font size",
+            }),
         );
         expect(editor.getAttribute("data-font-size")).toBe("16");
         fireEvent.click(
-            screen.getByRole("button", { name: "Decrease font size" }),
+            screen.getByRole("button", {
+                name: "Decrease editor font size",
+            }),
         );
+        expect(editor.getAttribute("data-font-size")).toBe("15");
+    });
+
+    it("uses Ctrl plus and minus for the active editor", () => {
+        render(<App />);
+        const editor = screen.getByRole("textbox", { name: "C++ source" });
+        editor.focus();
+
+        fireEvent.keyDown(editor, { key: "+", ctrlKey: true });
+        expect(editor.getAttribute("data-font-size")).toBe("16");
+        fireEvent.keyDown(editor, { key: "-", ctrlKey: true });
         expect(editor.getAttribute("data-font-size")).toBe("15");
     });
 
@@ -148,5 +163,26 @@ describe("App", () => {
             screen.getByRole("button", { name: "Retry initialization" }),
         );
         expect(mocks.restart).toHaveBeenCalledOnce();
+    });
+
+    it("resizes diagnostics with controls and Ctrl plus", () => {
+        mocks.state.error = {
+            message: "Analysis failed",
+            diagnostics: "long diagnostics",
+        };
+        render(<App />);
+
+        const diagnostics = screen.getByRole("alert");
+        expect(diagnostics.getAttribute("style")).toContain("13px");
+        fireEvent.click(
+            screen.getByRole("button", {
+                name: "Increase diagnostics font size",
+            }),
+        );
+        expect(diagnostics.getAttribute("style")).toContain("14px");
+
+        diagnostics.focus();
+        fireEvent.keyDown(diagnostics, { key: "+", ctrlKey: true });
+        expect(diagnostics.getAttribute("style")).toContain("15px");
     });
 });

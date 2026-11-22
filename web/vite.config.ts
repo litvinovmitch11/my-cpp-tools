@@ -17,5 +17,5 @@ export default defineConfig({
             "/api": analysisApiTarget,
         },
     },
-    build: { outDir: "dist", sourcemap: true },
+    build: { outDir: "dist", sourcemap: false },
 });
